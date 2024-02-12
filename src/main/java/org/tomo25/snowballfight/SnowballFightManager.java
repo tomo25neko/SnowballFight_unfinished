@@ -1,22 +1,23 @@
 package org.tomo25.snowballfight;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class SnowballFightManager {
 
     private int time;
-
     private final TeamScoreManager teamScoreManager;
-
     private final SnowballFight plugin;
+    private final int snowballGiveInterval = 15; // 雪玉を配布する間隔（秒）
+    private final int maxSnowballs = 16; // プレイヤーが持てる雪玉の最大数
+
 
     public SnowballFightManager(SnowballFight snowballFight) {
         this.plugin = snowballFight;
@@ -46,9 +47,47 @@ public class SnowballFightManager {
         }
 
         startPreCountdown();
+        startSnowballDistribution(); // スタート時に雪玉を配布
 
     }
 
+    private void startSnowballDistribution() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Bukkit.getOnlinePlayers().stream()
+                        .filter(player -> !isPlayerSpectator(player))
+                        .forEach(player -> {
+                            int currentSnowballs = getPlayerSnowballCount(player);
+                            if (currentSnowballs < maxSnowballs) {
+                                int snowballsToAdd = Math.min(maxSnowballs - currentSnowballs, 3);
+                                giveSnowballs(player, snowballsToAdd);
+                            }
+                        });
+            }
+        }.runTaskTimer(plugin, 0L, 20L * snowballGiveInterval);
+    }
+
+    private void giveSnowballs(Player player, int amount) {
+        ItemStack snowballStack = new ItemStack(Material.SNOWBALL, amount);
+        player.getInventory().addItem(snowballStack);
+    }
+
+    private int getPlayerSnowballCount(Player player) {
+        int count = 0;
+        ItemStack[] contents = player.getInventory().getContents();
+        for (ItemStack itemStack : contents) {
+            if (itemStack != null && itemStack.getType() == Material.SNOWBALL) {
+                count += itemStack.getAmount();
+            }
+        }
+        return count;
+    }
+
+    private boolean isPlayerSpectator(Player player) {
+        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
+        return playerTeam == null; // プレイヤーのチームが null の場合は観戦者と判断
+    }
     private void startPreCountdown() {
         new BukkitRunnable() {
             int preCountdown = 10;
@@ -88,6 +127,14 @@ public class SnowballFightManager {
     private void endGame() {
         announceWinningTeam();
         resetGame();
+    }
+
+    // ゲームが終了した際にプレイヤーの装備を取り外すメソッド
+    public void removePlayerArmor(Player player) {
+        EntityEquipment equipment = player.getEquipment();
+        if (equipment != null) {
+            equipment.setChestplate(null);
+        }
     }
 
     private void announceWinningTeam() {
@@ -133,11 +180,40 @@ public class SnowballFightManager {
         }
     }
 
+    public void setStartPoint(Player player, GameTeam team) {
+        Location standLocation = player.getLocation(); // プレイヤーの位置を取得
+        saveArmorStandLocation(team, standLocation); // アーマースタンドの位置を保存
+    }
+
+    private void saveArmorStandLocation(GameTeam team, Location location) {
+        // アーマースタンドの位置を保存するロジックを実装
+        // 例: ファイル、データベース、またはメモリ内のデータ構造に位置情報を保存する
+        // 保存する方法は使用するプラグインやニーズにより異なります
+    }
+
     private Location getTeamArmorStandLocation(GameTeam team) {
         String armorStandName = (team == GameTeam.RED) ? "RedStart" : "BlueStart";
+
         // アーマースタンドの名前から位置を取得するロジックを実装
         // 例: return new Location(Bukkit.getWorld("world"), x, y, z);
-        return null;
+
+        World world = Bukkit.getWorld("your_world_name");  // ワールド名を実際の名前に変更する
+        double x = 0;  // アーマースタンドの X 座標
+        double y = 0;  // アーマースタンドの Y 座標
+        double z = 0;  // アーマースタンドの Z 座標
+
+        // アーマースタンドの名前に応じて座標を設定
+        if (armorStandName.equalsIgnoreCase("RedStart")) {
+            x = 100;  // 赤チームのアーマースタンドの X 座標
+            y = 65;   // 赤チームのアーマースタンドの Y 座標
+            z = 200;  // 赤チームのアーマースタンドの Z 座標
+        } else if (armorStandName.equalsIgnoreCase("BlueStart")) {
+            x = -100;  // 青チームのアーマースタンドの X 座標
+            y = 65;    // 青チームのアーマースタンドの Y 座標
+            z = -200;  // 青チームのアーマースタンドの Z 座標
+        }
+
+        return new Location(world, x, y, z);
     }
 
     public void teleportPlayersToStartLocations() {
@@ -148,8 +224,32 @@ public class SnowballFightManager {
             Bukkit.getOnlinePlayers().forEach(player -> {
                 GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
                 Location targetLocation = (playerTeam == GameTeam.RED) ? redTeamLocation : blueTeamLocation;
+                // 赤チームのプレイヤーには赤い革チェストプレートを、青チームのプレイヤーには青い革チェストプレートを装備
+                equipTeamArmor(player, playerTeam);
                 player.teleport(targetLocation);
             });
+        }
+    }
+
+    // プレイヤーにチームごとの革チェストプレートを装備するメソッド
+    private void equipTeamArmor(Player player, GameTeam team) {
+        EntityEquipment equipment = player.getEquipment();
+        if (equipment != null) {
+            ItemStack chestplate;
+            LeatherArmorMeta meta;
+
+            if (team == GameTeam.RED) {
+                chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
+                meta = (LeatherArmorMeta) chestplate.getItemMeta();
+                meta.setColor(Color.RED);
+            } else {
+                chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
+                meta = (LeatherArmorMeta) chestplate.getItemMeta();
+                meta.setColor(Color.BLUE);
+            }
+
+            chestplate.setItemMeta(meta);
+            equipment.setChestplate(chestplate);
         }
     }
 
