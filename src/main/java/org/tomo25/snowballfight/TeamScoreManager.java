@@ -52,6 +52,11 @@ public class TeamScoreManager {
         addPlayerToTeam(target, GameTeam.BLUE);
     }
 
+    public void addPlayerToSpectator(Player player) {
+        playerTeams.put(player, null);
+    }
+
+
     public void increaseOpponentTeamKills(GameTeam throwerTeam) {
         if (throwerTeam == GameTeam.RED) {
             increaseBlueTeamKills();

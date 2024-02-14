@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.tomo25.snowballfight.command.SetSpawnCommand;
 import org.tomo25.snowballfight.command.StartCommand;
 import org.tomo25.snowballfight.command.TeamSetCommand;
 import org.tomo25.snowballfight.command.TimeCommand;
@@ -18,12 +19,17 @@ public final class SnowballFight extends JavaPlugin {
 
         snowballFightManager = new SnowballFightManager(this);
         new SnowballListener(snowballFightManager, this);
+        // SnowballFightListenerの呼び出し
+        new SnowballFightListener(snowballFightManager);
+
 
         Bukkit.getOnlinePlayers().forEach(this::sendPluginStatusMessage);
 
         getCommand("snowballfighttime").setExecutor(new TimeCommand(snowballFightManager));
         getCommand("snowballfightstart").setExecutor(new StartCommand(snowballFightManager));
         getCommand("snowballfightteam").setExecutor(new TeamSetCommand(snowballFightManager));
+        // SetSpawnCommandを登録
+        getCommand("snowballfight").setExecutor(new SetSpawnCommand(snowballFightManager));
     }
 
     private void updatePlayerTeamDisplay(Player player) {

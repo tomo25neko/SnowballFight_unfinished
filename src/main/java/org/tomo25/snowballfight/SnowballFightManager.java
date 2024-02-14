@@ -14,6 +14,7 @@ public class SnowballFightManager {
 
     private int time;
     private final TeamScoreManager teamScoreManager;
+    private final SpawnPointManager spawnPointManager;
     private final SnowballFight plugin;
     private final int snowballGiveInterval = 15; // 雪玉を配布する間隔（秒）
     private final int maxSnowballs = 16; // プレイヤーが持てる雪玉の最大数
@@ -21,8 +22,13 @@ public class SnowballFightManager {
 
     public SnowballFightManager(SnowballFight snowballFight) {
         this.plugin = snowballFight;
-        time = 0; // ゲーム開始前
-        teamScoreManager = new TeamScoreManager();
+        this.time = 0;
+        this.teamScoreManager = new TeamScoreManager();
+        this.spawnPointManager = new SpawnPointManager();
+    }
+
+    public void setSpawnLocation(GameTeam team, Location location) {
+        spawnPointManager.setSpawnPoint(team, location);
     }
 
     public int getTime() {
@@ -38,13 +44,6 @@ public class SnowballFightManager {
     }
 
     public void startGame() {
-        Location redTeamLocation = getTeamArmorStandLocation(GameTeam.RED);
-        Location blueTeamLocation = getTeamArmorStandLocation(GameTeam.BLUE);
-
-        if (redTeamLocation == null || blueTeamLocation == null) {
-            Bukkit.broadcastMessage(ChatColor.RED + "エラー: スタート地点「RedStartもしくはBlueStartと名づけられたアーマースタンド」が設定されていません。");
-            return;
-        }
 
         startPreCountdown();
         startSnowballDistribution(); // スタート時に雪玉を配布
@@ -102,6 +101,7 @@ public class SnowballFightManager {
                 } else {
                     this.cancel();
                     startGameTimer();
+                    spawnPlayersToStartLocations(); // ゲームのスタート時にプレイヤーをスタート地点にテレポート
                 }
             }
         }.runTaskTimer((Plugin) this, 0L, 20L);
@@ -166,59 +166,10 @@ public class SnowballFightManager {
         teamScoreManager.increaseOpponentTeamScore(throwerTeam);
     }
 
-    public void playerDied(Player player) {
-        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
-        if (playerTeam != null) {
-            addPlayerToSpectator(player);
 
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    respawnPlayer(player, playerTeam);
-                }
-            }.runTaskLater((Plugin) this, 100L);
-        }
-    }
-
-    public void setStartPoint(Player player, GameTeam team) {
-        Location standLocation = player.getLocation(); // プレイヤーの位置を取得
-        saveArmorStandLocation(team, standLocation); // アーマースタンドの位置を保存
-    }
-
-    private void saveArmorStandLocation(GameTeam team, Location location) {
-        // アーマースタンドの位置を保存するロジックを実装
-        // 例: ファイル、データベース、またはメモリ内のデータ構造に位置情報を保存する
-        // 保存する方法は使用するプラグインやニーズにより異なります
-    }
-
-    private Location getTeamArmorStandLocation(GameTeam team) {
-        String armorStandName = (team == GameTeam.RED) ? "RedStart" : "BlueStart";
-
-        // アーマースタンドの名前から位置を取得するロジックを実装
-        // 例: return new Location(Bukkit.getWorld("world"), x, y, z);
-
-        World world = Bukkit.getWorld("your_world_name");  // ワールド名を実際の名前に変更する
-        double x = 0;  // アーマースタンドの X 座標
-        double y = 0;  // アーマースタンドの Y 座標
-        double z = 0;  // アーマースタンドの Z 座標
-
-        // アーマースタンドの名前に応じて座標を設定
-        if (armorStandName.equalsIgnoreCase("RedStart")) {
-            x = 100;  // 赤チームのアーマースタンドの X 座標
-            y = 65;   // 赤チームのアーマースタンドの Y 座標
-            z = 200;  // 赤チームのアーマースタンドの Z 座標
-        } else if (armorStandName.equalsIgnoreCase("BlueStart")) {
-            x = -100;  // 青チームのアーマースタンドの X 座標
-            y = 65;    // 青チームのアーマースタンドの Y 座標
-            z = -200;  // 青チームのアーマースタンドの Z 座標
-        }
-
-        return new Location(world, x, y, z);
-    }
-
-    public void teleportPlayersToStartLocations() {
-        Location redTeamLocation = getTeamArmorStandLocation(GameTeam.RED);
-        Location blueTeamLocation = getTeamArmorStandLocation(GameTeam.BLUE);
+    private void spawnPlayersToStartLocations() {
+        Location redTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.RED);
+        Location blueTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.BLUE);
 
         if (redTeamLocation != null && blueTeamLocation != null) {
             Bukkit.getOnlinePlayers().forEach(player -> {
@@ -227,7 +178,41 @@ public class SnowballFightManager {
                 // 赤チームのプレイヤーには赤い革チェストプレートを、青チームのプレイヤーには青い革チェストプレートを装備
                 equipTeamArmor(player, playerTeam);
                 player.teleport(targetLocation);
+
+                if (playerTeam != null) {
+                    // プレイヤーが観戦者でない場合にテレポート
+                    if (!isPlayerSpectator(player)) {
+                        player.teleport(targetLocation);
+                        equipTeamArmor(player, playerTeam);
+                    }
+                }
             });
+        }
+    }
+
+    public void playerDied(Player player) {
+        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
+        if (playerTeam != null) {
+            addPlayerToSpectator(player); // プレイヤーを観戦者に移動
+
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    respawnPlayer(player, playerTeam); // プレイヤーをリスポーンさせる
+                }
+            }.runTaskLater(plugin, 200L); // 10秒後にリスポーン
+        }
+    }
+
+    private void respawnPlayer(Player player, GameTeam team) {
+        // Implement player respawn logic based on the team's spawn location
+        Location respawnLocation = spawnPointManager.getSpawnPoint(team);
+        if (respawnLocation != null) {
+            // プレイヤーが観戦者の場合はスポーン地点にテレポートしない
+            if (!isPlayerSpectator(player)) {
+                player.teleport(respawnLocation);
+                equipTeamArmor(player, team);
+            }
         }
     }
 
@@ -248,6 +233,8 @@ public class SnowballFightManager {
                 meta.setColor(Color.BLUE);
             }
 
+            // 新しいコード: アーマースタンドの生成
+            spawnPointManager.spawnArmorStand(team);
             chestplate.setItemMeta(meta);
             equipment.setChestplate(chestplate);
         }
@@ -259,14 +246,6 @@ public class SnowballFightManager {
 
     public void addPlayerToBlueTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToBlueTeam(player);
-    }
-
-    private void respawnPlayer(Player player, GameTeam team) {
-        // Implement player respawn logic based on the team's spawn location
-        Location respawnLocation = getTeamArmorStandLocation(team);
-        if (respawnLocation != null) {
-            player.teleport(respawnLocation);
-        }
     }
 
     public void addPlayerToSpectator(Player player) {
