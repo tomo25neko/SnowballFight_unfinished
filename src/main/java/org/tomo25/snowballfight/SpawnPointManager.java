@@ -1,6 +1,8 @@
 package org.tomo25.snowballfight;
 
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
@@ -33,7 +35,6 @@ public class SpawnPointManager {
         }
     }
 
-    // spawnArmorStandメソッドの修正
     public void spawnArmorStand(GameTeam team) {
         Location location = spawnPoints.get(team);
         if (location != null) {
@@ -45,7 +46,6 @@ public class SpawnPointManager {
         }
     }
 
-    // clearSpawnPointsメソッドの修正
     public void clearSpawnPoints() {
         for (Location location : spawnPoints.values()) {
             // LocationオブジェクトからWorldに存在するEntityを取得して削除
