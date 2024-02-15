@@ -1,13 +1,13 @@
 package org.tomo25.snowballfight;
 
-import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,9 +15,12 @@ import java.util.Map;
 public class SpawnPointManager {
 
     private final Map<GameTeam, Location> spawnPoints;
+    private final Map<GameTeam, ArmorStand> armorStandMap;
 
-    public SpawnPointManager() {
+
+    public SpawnPointManager(JavaPlugin plugin) {
         this.spawnPoints = new HashMap<>();
+        this.armorStandMap = new HashMap<>();
     }
 
     public void setSpawnPoint(GameTeam team, Location location) {
@@ -35,15 +38,40 @@ public class SpawnPointManager {
         }
     }
 
-    public void spawnArmorStand(GameTeam team) {
+    public void spawnArmorStand(JavaPlugin plugin, GameTeam team) {
         Location location = spawnPoints.get(team);
         if (location != null) {
             World world = location.getWorld();
             ArmorStand armorStand = (ArmorStand) world.spawnEntity(location.clone().add(0, 1, 0), EntityType.ARMOR_STAND);
             armorStand.setCustomName(team.getTeamName() + " Armor Stand");
             armorStand.setCustomNameVisible(true);
-            armorStand.setVisible(false);
+
+            // アーマースタンドを透明化
+            armorStand.setMetadata("invisible", new FixedMetadataValue(plugin, true));
+
+            armorStandMap.put(team, armorStand);
         }
+    }
+
+
+    // アーマースタンドの表示を一時的に撤去
+    public void removeArmorStands() {
+        for (ArmorStand armorStand : armorStandMap.values()) {
+            armorStand.remove();
+        }
+    }
+
+    // アーマースタンドの表示をリセット
+    public void resetArmorStands(JavaPlugin plugin) {
+        for (ArmorStand armorStand : armorStandMap.values()) {
+            armorStand.setVisible(true);
+            armorStand.setMetadata("invisible", new FixedMetadataValue(plugin, false));
+        }
+    }
+
+    // 新しいコード: 初期化された ArmorStandMap を返すメソッド
+    public Map<GameTeam, ArmorStand> getArmorStandMap() {
+        return armorStandMap;
     }
 
     public void clearSpawnPoints() {

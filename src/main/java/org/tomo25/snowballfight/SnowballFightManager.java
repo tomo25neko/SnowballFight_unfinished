@@ -24,7 +24,7 @@ public class SnowballFightManager {
         this.plugin = snowballFight;
         this.time = 0;
         this.teamScoreManager = new TeamScoreManager();
-        this.spawnPointManager = new SpawnPointManager();
+        this.spawnPointManager = new SpawnPointManager(snowballFight);
     }
 
     public void setSpawnLocation(GameTeam team, Location location) {
@@ -234,7 +234,7 @@ public class SnowballFightManager {
             }
 
             // 新しいコード: アーマースタンドの生成
-            spawnPointManager.spawnArmorStand(team);
+            spawnPointManager.spawnArmorStand(plugin,team);
             chestplate.setItemMeta(meta);
             equipment.setChestplate(chestplate);
         }
