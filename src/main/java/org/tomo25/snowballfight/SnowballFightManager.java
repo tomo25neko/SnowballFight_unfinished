@@ -15,9 +15,8 @@ public class SnowballFightManager {
     private int time;
     private final TeamScoreManager teamScoreManager;
     private final SpawnPointManager spawnPointManager;
+    private  final SnowballDistributionManager snowballDistributionManager;
     private final SnowballFight plugin;
-    private final int snowballGiveInterval = 15; // 雪玉を配布する間隔（秒）
-    private final int maxSnowballs = 16; // プレイヤーが持てる雪玉の最大数
 
 
     public SnowballFightManager(SnowballFight snowballFight) {
@@ -25,6 +24,7 @@ public class SnowballFightManager {
         this.time = 0;
         this.teamScoreManager = new TeamScoreManager();
         this.spawnPointManager = new SpawnPointManager(snowballFight);
+        this.snowballDistributionManager = new SnowballDistributionManager(snowballFight);
     }
 
     public void setSpawnLocation(GameTeam team, Location location) {
@@ -46,47 +46,10 @@ public class SnowballFightManager {
     public void startGame() {
 
         startPreCountdown();
-        startSnowballDistribution(); // スタート時に雪玉を配布
+        snowballDistributionManager.startSnowballDistribution(this); // スタート時に雪玉を配布
 
     }
 
-    private void startSnowballDistribution() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                Bukkit.getOnlinePlayers().stream()
-                        .filter(player -> !isPlayerSpectator(player))
-                        .forEach(player -> {
-                            int currentSnowballs = getPlayerSnowballCount(player);
-                            if (currentSnowballs < maxSnowballs) {
-                                int snowballsToAdd = Math.min(maxSnowballs - currentSnowballs, 3);
-                                giveSnowballs(player, snowballsToAdd);
-                            }
-                        });
-            }
-        }.runTaskTimer(plugin, 0L, 20L * snowballGiveInterval);
-    }
-
-    private void giveSnowballs(Player player, int amount) {
-        ItemStack snowballStack = new ItemStack(Material.SNOWBALL, amount);
-        player.getInventory().addItem(snowballStack);
-    }
-
-    private int getPlayerSnowballCount(Player player) {
-        int count = 0;
-        ItemStack[] contents = player.getInventory().getContents();
-        for (ItemStack itemStack : contents) {
-            if (itemStack != null && itemStack.getType() == Material.SNOWBALL) {
-                count += itemStack.getAmount();
-            }
-        }
-        return count;
-    }
-
-    private boolean isPlayerSpectator(Player player) {
-        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
-        return playerTeam == null; // プレイヤーのチームが null の場合は観戦者と判断
-    }
     private void startPreCountdown() {
         new BukkitRunnable() {
             int preCountdown = 10;
@@ -129,14 +92,6 @@ public class SnowballFightManager {
         resetGame();
     }
 
-    // ゲームが終了した際にプレイヤーの装備を取り外すメソッド
-    public void removePlayerArmor(Player player) {
-        EntityEquipment equipment = player.getEquipment();
-        if (equipment != null) {
-            equipment.setChestplate(null);
-        }
-    }
-
     private void announceWinningTeam() {
         // Implement winning team announcement logic
     }
@@ -151,6 +106,14 @@ public class SnowballFightManager {
         }
     }
 
+    // ゲームが終了した際にプレイヤーの装備を取り外すメソッド
+    public void removePlayerArmor(Player player) {
+        EntityEquipment equipment = player.getEquipment();
+        if (equipment != null) {
+            equipment.setChestplate(null);
+        }
+    }
+
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player && isGameRunning()) {
@@ -158,6 +121,10 @@ public class SnowballFightManager {
         }
     }
 
+    private boolean isPlayerSpectator(Player player) {
+        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
+        return playerTeam == null; // プレイヤーのチームが null の場合は観戦者と判断
+    }
     private boolean isGameRunning() {
         return time > 0;
     }

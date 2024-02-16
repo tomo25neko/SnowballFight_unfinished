@@ -29,7 +29,7 @@ public final class SnowballFight extends JavaPlugin {
         getCommand("snowballfightstart").setExecutor(new StartCommand(snowballFightManager));
         getCommand("snowballfightteam").setExecutor(new TeamSetCommand(snowballFightManager));
         // SetSpawnCommandを登録
-        getCommand("snowballfight").setExecutor(new SetSpawnCommand(snowballFightManager));
+        getCommand("snowballfightsetspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
     }
 
     private void updatePlayerTeamDisplay(Player player) {
