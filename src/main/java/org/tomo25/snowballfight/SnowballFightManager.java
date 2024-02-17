@@ -9,6 +9,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 public class SnowballFightManager {
 
@@ -44,6 +48,11 @@ public class SnowballFightManager {
     }
 
     public void startGame() {
+        // スタート地点が設定されているか確認
+        if (spawnPointManager.getSpawnPoint(GameTeam.RED) == null || spawnPointManager.getSpawnPoint(GameTeam.BLUE) == null) {
+            Bukkit.broadcastMessage(ChatColor.RED + "エラー: 赤チームと青チームのスタート地点が設定されていません！");
+            return;
+        }
 
         startPreCountdown();
         snowballDistributionManager.startSnowballDistribution(this); // スタート時に雪玉を配布
@@ -121,11 +130,11 @@ public class SnowballFightManager {
         }
     }
 
-    private boolean isPlayerSpectator(Player player) {
+    public boolean isPlayerSpectator(Player player) {
         GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
         return playerTeam == null; // プレイヤーのチームが null の場合は観戦者と判断
     }
-    private boolean isGameRunning() {
+    public boolean isGameRunning() {
         return time > 0;
     }
 
@@ -244,10 +253,14 @@ public class SnowballFightManager {
         }
     }
 
+
     private void updatePlayerTeamDisplay(Player player) {
         GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
         int redTeamKills = teamScoreManager.getTeamScore(GameTeam.RED);
         int blueTeamKills = teamScoreManager.getTeamScore(GameTeam.BLUE);
+
+        // スコアボードの更新
+        updateScoreboard(player);
 
         player.sendTitle("", getPlayerTeamDisplay(player), 10, 70, 20);
         player.sendMessage(ChatColor.GREEN + "あなたの所属: " + getPlayerTeamDisplay(player));
@@ -256,6 +269,28 @@ public class SnowballFightManager {
         player.sendMessage(ChatColor.GREEN + "青チームの人数: " + teamScoreManager.getBlueTeamSize());
         player.sendMessage(ChatColor.RED + "赤チームのキル数: " + redTeamKills);
         player.sendMessage(ChatColor.BLUE + "青チームのキル数: " + blueTeamKills);
+    }
+
+    private void updateScoreboard(Player player) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        Objective objective = scoreboard.registerNewObjective("snowballFight", "dummy", ChatColor.BOLD + "Snowball Fight");
+
+        // 赤チームのスコア
+        Team redTeam = scoreboard.registerNewTeam("redTeam");
+        redTeam.setPrefix(ChatColor.RED.toString());
+        redTeam.addEntry(ChatColor.RED.toString());
+        Score redScore = objective.getScore(ChatColor.RED.toString());
+        redScore.setScore(teamScoreManager.getTeamScore(GameTeam.RED));
+
+        // 青チームのスコア
+        Team blueTeam = scoreboard.registerNewTeam("blueTeam");
+        blueTeam.setPrefix(ChatColor.BLUE.toString());
+        blueTeam.addEntry(ChatColor.BLUE.toString());
+        Score blueScore = objective.getScore(ChatColor.BLUE.toString());
+        blueScore.setScore(teamScoreManager.getTeamScore(GameTeam.BLUE));
+
+        // プレイヤーにスコアボードを表示
+        player.setScoreboard(scoreboard);
     }
 
 

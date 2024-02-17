@@ -1,5 +1,6 @@
 package org.tomo25.snowballfight.command;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -25,7 +26,15 @@ public class StartCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         if (args.length > 0 && args[0].equalsIgnoreCase("start")) {
-            if (snowballFightManager.getTime() > 0) {
+            // チームもしくは観戦者に追加されていないプレイヤーがいる場合
+            if (!validatePlayers()) {
+                player.sendMessage(ChatColor.RED + "エラー: チームもしくは観戦者に追加されていないプレイヤーがいます。/snowballfight teamset を使用してプレイヤーを追加してください。");
+                return true;
+            }
+
+            if (snowballFightManager.getTime() <= 0) {
+                player.sendMessage(ChatColor.RED + "ゲームの時間が設定されていません！");
+            } else if (snowballFightManager.getTime() > 0) {
                 player.sendMessage(ChatColor.RED + "ゲームは既に開始されています！");
             } else {
                 snowballFightManager.startGame();
@@ -36,5 +45,15 @@ public class StartCommand implements CommandExecutor {
             player.sendMessage(ChatColor.RED + "正しい使い方: /snowballfightstart");
             return false;
         }
+    }
+
+    private boolean validatePlayers() {
+        // チームもしくは観戦者に追加されていないプレイヤーがいるか確認
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (snowballFightManager.getTeamScoreManager().getPlayerTeam(onlinePlayer) == null) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -52,6 +52,32 @@ public class TeamSetCommand implements CommandExecutor {
                 }
             }
             return true;
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("addplayer")) {
+            String teamName = args[1];
+            String playerName = args[2];
+
+            Player target = Bukkit.getPlayer(playerName);
+
+            if (target != null) {
+                switch (teamName.toLowerCase()) {
+                    case "red":
+                        snowballFightManager.addPlayerToRedTeam(target, GameTeam.RED);
+                        player.sendMessage(ChatColor.GREEN + target.getName() + " を赤チームに追加しました。");
+                        teamScoreManager.increaseTeamScore(GameTeam.RED);
+                        break;
+                    case "blue":
+                        snowballFightManager.addPlayerToBlueTeam(target, GameTeam.BLUE);
+                        player.sendMessage(ChatColor.GREEN + target.getName() + " を青チームに追加しました。");
+                        teamScoreManager.increaseTeamScore(GameTeam.BLUE);
+                        break;
+                    default:
+                        player.sendMessage(ChatColor.RED + "エラー: 無効なチーム名です。有効な値は 'red' または 'blue' です。");
+                        break;
+                }
+            } else {
+                player.sendMessage(ChatColor.RED + "エラー: プレイヤー " + playerName + " が見つかりません。");
+            }
+            return true;
         }
 
         return false;
