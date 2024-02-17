@@ -8,6 +8,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.tomo25.snowballfight.command.SetSpawnCommand;
@@ -59,27 +60,34 @@ public final class SnowballFight extends JavaPlugin {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective objective = scoreboard.registerNewObjective("snowballFight", "dummy", "Snowball Fight");
 
-        objective.getScore(" ").setScore(6); // Add blank space for better visibility
+        objective.getScore(" ").setScore(0); // Add blank space for better visibility
 
         String teamDisplay = snowballFightManager.getPlayerTeamDisplay(player);
-        objective.getScore(ChatColor.GREEN + "あなたの所属: " + teamDisplay).setScore(5);
-        objective.getScore(ChatColor.GOLD + "プレイヤー数: " + Bukkit.getOnlinePlayers().size()).setScore(4);
+        objective.getScore(ChatColor.GREEN + "あなたの所属: " + teamDisplay).setScore(1);
+        objective.getScore(ChatColor.GOLD + "プレイヤー数: " + Bukkit.getOnlinePlayers().size()).setScore(2);
 
         if (snowballFightManager.isPlayerSpectator(player)) {
             objective.getScore(ChatColor.GRAY + "観戦者").setScore(3);
         } else {
             int redTeamPlayers = snowballFightManager.getTeamScoreManager().getRedTeamSize();
             int blueTeamPlayers = snowballFightManager.getTeamScoreManager().getBlueTeamSize();
-            objective.getScore(ChatColor.RED + "赤チーム人数: " + redTeamPlayers).setScore(3);
-            objective.getScore(ChatColor.BLUE + "青チーム人数: " + blueTeamPlayers).setScore(2);
+            objective.getScore(ChatColor.RED + "赤チーム人数: " + redTeamPlayers).setScore(4);
+            objective.getScore(ChatColor.BLUE + "青チーム人数: " + blueTeamPlayers).setScore(5);
         }
-
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         player.setScoreboard(scoreboard);
     }
 
     @Override
     public void onDisable() {
         getLogger().info("プラグインが無効になりました");
+
+        // プラグインが無効になったときに全プレイヤーのスコアボードとスコアを削除
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Scoreboard playerScoreboard = player.getScoreboard();
+            playerScoreboard.getEntries().forEach(playerScoreboard::resetScores);
+            player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+        }
     }
 
     private void sendPluginStatusMessage(Player player) {
