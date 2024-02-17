@@ -2,6 +2,7 @@ package org.tomo25.snowballfight.command;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -35,24 +36,17 @@ public class TeamSetCommand implements CommandExecutor {
 
             switch (subCommand) {
                 case "teamset":
-                    if (args.length == 1) {
-                        // 引数が不足している場合
-                        player.sendMessage(ChatColor.RED + "エラー: 引数が不足しています。使用法: /snowballfight teamset");
+                    if (!checkGlassExists(player.getLocation(), Material.RED_STAINED_GLASS) || !checkGlassExists(player.getLocation(), Material.BLUE_STAINED_GLASS)) {
+                        player.sendMessage(ChatColor.RED + "エラー: 赤と青の色付きガラスが両方存在していません。");
                         return true;
                     }
 
-                    int redTeamY = 3;
-                    Material redTeamGlass = Material.RED_STAINED_GLASS;
-
-                    int blueTeamY = 3;
-                    Material blueTeamGlass = Material.BLUE_STAINED_GLASS;
-
                     for (Player target : Bukkit.getOnlinePlayers()) {
-                        if (target.getLocation().getBlock().getType() == redTeamGlass && target.getLocation().getY() <= redTeamY) {
+                        if (target.getLocation().getBlock().getType() == Material.RED_STAINED_GLASS && target.getLocation().getY() <= 3) {
                             snowballFightManager.addPlayerToRedTeam(target, GameTeam.RED);
                             player.sendMessage(ChatColor.GREEN + target.getName() + " を赤チームに追加しました。");
                             teamScoreManager.increaseTeamScore(GameTeam.RED);
-                        } else if (target.getLocation().getBlock().getType() == blueTeamGlass && target.getLocation().getY() <= blueTeamY) {
+                        } else if (target.getLocation().getBlock().getType() == Material.BLUE_STAINED_GLASS && target.getLocation().getY() <= 3) {
                             snowballFightManager.addPlayerToBlueTeam(target, GameTeam.BLUE);
                             player.sendMessage(ChatColor.GREEN + target.getName() + " を青チームに追加しました。");
                             teamScoreManager.increaseTeamScore(GameTeam.BLUE);
@@ -106,5 +100,9 @@ public class TeamSetCommand implements CommandExecutor {
         // 引数が一つも指定されていない場合
         player.sendMessage(ChatColor.RED + "エラー: サブコマンドが必要です。使用法: /snowballfight [teamset|addplayer] [Red|Blue]");
         return true;
+    }
+
+    private boolean checkGlassExists(Location location, Material material) {
+        return location.getBlock().getType() == material;
     }
 }

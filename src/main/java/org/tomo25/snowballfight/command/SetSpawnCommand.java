@@ -44,12 +44,6 @@ public class SetSpawnCommand implements CommandExecutor {
             // スポーン地点設定
             snowballFightManager.setSpawnLocation(GameTeam.valueOf(team.toUpperCase()), location);
 
-            // 赤と青のガラスが存在しない場合にエラーを返す
-            if (!checkGlassExists(location, Material.RED_STAINED_GLASS) || !checkGlassExists(location, Material.BLUE_STAINED_GLASS)) {
-                sender.sendMessage(ChatColor.RED + "エラー: 赤と青の色付きガラスが両方存在していません。");
-                return;
-            }
-
             // アーマースタンド設置
             spawnArmorStand(location, team);
 
@@ -59,9 +53,6 @@ public class SetSpawnCommand implements CommandExecutor {
         }
     }
 
-    private boolean checkGlassExists(Location location, Material material) {
-        return location.getBlock().getType() == material;
-    }
 
     private void spawnArmorStand(Location location, String team) {
         ArmorStand armorStand = (ArmorStand) location.getWorld().spawnEntity(location.clone().add(0, 1, 0), org.bukkit.entity.EntityType.ARMOR_STAND);
