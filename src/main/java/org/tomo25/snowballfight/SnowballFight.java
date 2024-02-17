@@ -28,7 +28,6 @@ public final class SnowballFight extends JavaPlugin {
         getCommand("snowballfighttime").setExecutor(new TimeCommand(snowballFightManager));
         getCommand("snowballfightstart").setExecutor(new StartCommand(snowballFightManager));
         getCommand("snowballfightteam").setExecutor(new TeamSetCommand(snowballFightManager));
-        // SetSpawnCommandを登録
         getCommand("snowballfightsetspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
     }
 

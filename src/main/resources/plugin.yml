@@ -4,6 +4,11 @@ main: org.tomo25.snowballfight.SnowballFight
 api-version: '1.20'
 
 commands:
+  snowballfightsetspawn:
+    description: 赤チームと青チームのスタート地点を決めるコマンド
+    usage: /<command> [BlueもしくはRed]
+    aliases:
+      - sballspawn
   snowballfighttime:
     description: ゲームの時間を変更するコマンド
     usage: /<command> [time]
