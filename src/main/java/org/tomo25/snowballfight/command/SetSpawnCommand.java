@@ -37,7 +37,7 @@ public class SetSpawnCommand implements CommandExecutor {
     private void setSpawnPoint(CommandSender sender, String team) {
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            Location location = player.getLocation().clone().add(0, -1, 0);
+            Location location = new Location(player.getWorld(), player.getLocation().getX(), player.getLocation().getY() - 1, player.getLocation().getZ());
             snowballFightManager.setSpawnLocation(GameTeam.valueOf(team.toUpperCase()), location);
             sender.sendMessage(ChatColor.GREEN + team + " チームのスポーンポイントを設定しました。");
         } else {

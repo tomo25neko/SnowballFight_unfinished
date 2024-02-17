@@ -42,7 +42,7 @@ public class StartCommand implements CommandExecutor {
             }
             return true;
         } else {
-            player.sendMessage(ChatColor.RED + "正しい使い方: /snowballfightstart");
+            player.sendMessage(ChatColor.RED + "正しい使い方: /snowballfightstart start");
             return false;
         }
     }

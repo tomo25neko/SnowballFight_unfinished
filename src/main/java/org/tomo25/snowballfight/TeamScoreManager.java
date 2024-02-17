@@ -52,18 +52,7 @@ public class TeamScoreManager {
         addPlayerToTeam(target, GameTeam.BLUE);
     }
 
-    public void addPlayerToSpectator(Player player) {
-        playerTeams.put(player, null);
-    }
 
-
-    public void increaseOpponentTeamKills(GameTeam throwerTeam) {
-        if (throwerTeam == GameTeam.RED) {
-            increaseBlueTeamKills();
-        } else {
-            increaseRedTeamKills();
-        }
-    }
 
     public void increaseRedTeamKills() {
         increaseTeamKills(GameTeam.RED);
@@ -93,11 +82,4 @@ public class TeamScoreManager {
         return (int) playerTeams.values().stream().filter(t -> t == team).count();
     }
 
-    public boolean isPlayerInRedTeam(Player player) {
-        return isPlayerInTeam(player, GameTeam.RED);
-    }
-
-    public boolean isPlayerInBlueTeam(Player player) {
-        return isPlayerInTeam(player, GameTeam.BLUE);
-    }
 }

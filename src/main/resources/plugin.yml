@@ -6,7 +6,7 @@ api-version: '1.20'
 commands:
   snowballfightsetspawn:
     description: 赤チームと青チームのスタート地点を決めるコマンド
-    usage: /<command> [BlueもしくはRed]
+    usage: /<command> [Blue|Red]
     aliases:
       - sballspawn
   snowballfighttime:
@@ -16,11 +16,11 @@ commands:
       - sballtime
   snowballfightstart:
     description: ゲームを始めるコマンド
-    usage: /<command>
+    usage: /<command> [start]
     aliases:
       - sballstart
   snowballfightteam:
     description:  チームを分けるコマンド
-    usage: /<command>
+    usage: /<command> [teamset|addplayer] [Red|Blue]
     aliases:
       - sbllteam
