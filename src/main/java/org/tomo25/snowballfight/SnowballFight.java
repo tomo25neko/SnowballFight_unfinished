@@ -3,8 +3,13 @@ package org.tomo25.snowballfight;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
 import org.tomo25.snowballfight.command.SetSpawnCommand;
 import org.tomo25.snowballfight.command.StartCommand;
 import org.tomo25.snowballfight.command.TeamSetCommand;
@@ -40,27 +45,37 @@ public final class SnowballFight extends JavaPlugin {
         }.runTaskTimer(this, 0L, 20L); // 1秒ごとに実行
     }
 
-    private void updatePlayerTeamDisplay(Player player) {
-        if (!snowballFightManager.isGameRunning()) {
-            String teamDisplay = snowballFightManager.getPlayerTeamDisplay(player);
-            String playerCountDisplay = ChatColor.GOLD + "プレイヤー数: " + Bukkit.getOnlinePlayers().size() + ChatColor.RESET;
-
-            player.sendTitle("", teamDisplay, 10, 70, 20);
-            player.sendMessage(ChatColor.GREEN + "あなたの所属: " + teamDisplay);
-            player.sendMessage(playerCountDisplay);
-
-            if (snowballFightManager.isPlayerSpectator(player)) {
-                player.sendMessage(ChatColor.GRAY + "観戦者");
-            } else {
-                // 赤チームと青チームのプレイヤー数は表示する
-                int redTeamPlayers = snowballFightManager.getTeamScoreManager().getRedTeamSize();
-                int blueTeamPlayers = snowballFightManager.getTeamScoreManager().getBlueTeamSize();
-                player.sendMessage(ChatColor.RED + "赤チーム人数: " + redTeamPlayers);
-                player.sendMessage(ChatColor.BLUE + "青チーム人数: " + blueTeamPlayers);
-            }
-        }
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        updatePlayerTeamDisplay(event.getPlayer());
     }
 
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        updatePlayerTeamDisplay(event.getPlayer());
+    }
+
+    private void updatePlayerTeamDisplay(Player player) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        Objective objective = scoreboard.registerNewObjective("snowballFight", "dummy", "Snowball Fight");
+
+        objective.getScore(" ").setScore(6); // Add blank space for better visibility
+
+        String teamDisplay = snowballFightManager.getPlayerTeamDisplay(player);
+        objective.getScore(ChatColor.GREEN + "あなたの所属: " + teamDisplay).setScore(5);
+        objective.getScore(ChatColor.GOLD + "プレイヤー数: " + Bukkit.getOnlinePlayers().size()).setScore(4);
+
+        if (snowballFightManager.isPlayerSpectator(player)) {
+            objective.getScore(ChatColor.GRAY + "観戦者").setScore(3);
+        } else {
+            int redTeamPlayers = snowballFightManager.getTeamScoreManager().getRedTeamSize();
+            int blueTeamPlayers = snowballFightManager.getTeamScoreManager().getBlueTeamSize();
+            objective.getScore(ChatColor.RED + "赤チーム人数: " + redTeamPlayers).setScore(3);
+            objective.getScore(ChatColor.BLUE + "青チーム人数: " + blueTeamPlayers).setScore(2);
+        }
+
+        player.setScoreboard(scoreboard);
+    }
 
     @Override
     public void onDisable() {

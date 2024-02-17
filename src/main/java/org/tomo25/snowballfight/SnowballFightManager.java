@@ -10,9 +10,8 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
+
 
 public class SnowballFightManager {
 
@@ -138,11 +137,6 @@ public class SnowballFightManager {
         return time > 0;
     }
 
-    public void increaseOpponentTeamScore(GameTeam throwerTeam) {
-        teamScoreManager.increaseOpponentTeamScore(throwerTeam);
-    }
-
-
     private void spawnPlayersToStartLocations() {
         Location redTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.RED);
         Location blueTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.BLUE);
@@ -228,6 +222,9 @@ public class SnowballFightManager {
         // Implement adding a player to the spectator team
     }
 
+    public void increaseOpponentTeamScore(GameTeam throwerTeam) {
+        teamScoreManager.increaseOpponentTeamScore(throwerTeam);
+    }
     public void increaseRedTeamKills() {
         teamScoreManager.increaseRedTeamKills();
     }
@@ -255,46 +252,26 @@ public class SnowballFightManager {
 
 
     private void updatePlayerTeamDisplay(Player player) {
-        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
-        int redTeamKills = teamScoreManager.getTeamScore(GameTeam.RED);
-        int blueTeamKills = teamScoreManager.getTeamScore(GameTeam.BLUE);
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        Objective objective = scoreboard.getObjective("snowballFight");
 
-        // スコアボードの更新
-        updateScoreboard(player);
+        if (objective == null) {
+            objective = scoreboard.registerNewObjective("snowballFight", "dummy", ChatColor.BOLD + "Snowball Fight");
+            objective.getScore(ChatColor.RED.toString()).setScore(teamScoreManager.getTeamScore(GameTeam.RED));
+            objective.getScore(ChatColor.BLUE.toString()).setScore(teamScoreManager.getTeamScore(GameTeam.BLUE));
+        }
 
+        // プレイヤーにスコアボードを表示
+        player.setScoreboard(scoreboard);
+
+        // 以下はタイトルやメッセージの送信（オプションで追加）
         player.sendTitle("", getPlayerTeamDisplay(player), 10, 70, 20);
         player.sendMessage(ChatColor.GREEN + "あなたの所属: " + getPlayerTeamDisplay(player));
         player.sendMessage(ChatColor.GREEN + "サーバーのプレイヤー数: " + Bukkit.getOnlinePlayers().size());
         player.sendMessage(ChatColor.GREEN + "赤チームの人数: " + teamScoreManager.getRedTeamSize());
         player.sendMessage(ChatColor.GREEN + "青チームの人数: " + teamScoreManager.getBlueTeamSize());
-        player.sendMessage(ChatColor.RED + "赤チームのキル数: " + redTeamKills);
-        player.sendMessage(ChatColor.BLUE + "青チームのキル数: " + blueTeamKills);
+        player.sendMessage(ChatColor.RED + "赤チームのキル数: " + teamScoreManager.getTeamScore(GameTeam.RED));
+        player.sendMessage(ChatColor.BLUE + "青チームのキル数: " + teamScoreManager.getTeamScore(GameTeam.BLUE));
     }
 
-    private void updateScoreboard(Player player) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-        Objective objective = scoreboard.registerNewObjective("snowballFight", "dummy", ChatColor.BOLD + "Snowball Fight");
-
-        // 赤チームのスコア
-        Team redTeam = scoreboard.registerNewTeam("redTeam");
-        redTeam.setPrefix(ChatColor.RED.toString());
-        redTeam.addEntry(ChatColor.RED.toString());
-        Score redScore = objective.getScore(ChatColor.RED.toString());
-        redScore.setScore(teamScoreManager.getTeamScore(GameTeam.RED));
-
-        // 青チームのスコア
-        Team blueTeam = scoreboard.registerNewTeam("blueTeam");
-        blueTeam.setPrefix(ChatColor.BLUE.toString());
-        blueTeam.addEntry(ChatColor.BLUE.toString());
-        Score blueScore = objective.getScore(ChatColor.BLUE.toString());
-        blueScore.setScore(teamScoreManager.getTeamScore(GameTeam.BLUE));
-
-        // プレイヤーにスコアボードを表示
-        player.setScoreboard(scoreboard);
-    }
-
-
-    public TeamScoreManager getTeamScoreManager() {
-        return teamScoreManager;
-    }
 }
