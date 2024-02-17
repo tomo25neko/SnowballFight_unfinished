@@ -1,16 +1,24 @@
 package org.tomo25.snowballfight;
 
+import org.bukkit.Color;
+
 public enum GameTeam {
-    RED("RED"),
-    BLUE("BLUE");
+    RED("RED", Color.RED),
+    BLUE("BLUE", Color.BLUE);
 
     private final String teamName;
+    private final Color color;
 
-    GameTeam(String teamName) {
+    GameTeam(String teamName, Color color) {
         this.teamName = teamName;
+        this.color = color;
     }
 
     public String getTeamName() {
         return teamName;
+    }
+
+    public Color getColor() {
+        return color;
     }
 }

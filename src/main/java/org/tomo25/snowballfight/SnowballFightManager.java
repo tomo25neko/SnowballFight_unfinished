@@ -218,11 +218,6 @@ public class SnowballFightManager {
                 meta = (LeatherArmorMeta) chestplate.getItemMeta();
                 meta.setColor(Color.BLUE);
             }
-
-            // 新しいコード: アーマースタンドの生成
-            spawnPointManager.spawnArmorStand(plugin,team);
-            chestplate.setItemMeta(meta);
-            equipment.setChestplate(chestplate);
         }
     }
 
