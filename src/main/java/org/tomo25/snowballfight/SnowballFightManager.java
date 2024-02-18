@@ -15,15 +15,13 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
-
 public class SnowballFightManager {
 
     private int time;
     private final TeamScoreManager teamScoreManager;
     private final SpawnPointManager spawnPointManager;
-    private  final SnowballDistributionManager snowballDistributionManager;
+    private final SnowballDistributionManager snowballDistributionManager;
     private final SnowballFight plugin;
-
 
     public SnowballFightManager(SnowballFight snowballFight) {
         this.plugin = snowballFight;
@@ -59,6 +57,11 @@ public class SnowballFightManager {
         startPreCountdown();
         snowballDistributionManager.startSnowballDistribution(this); // スタート時に雪玉を配布
 
+    }
+
+    // SpawnPointManager のインスタンスを提供するメソッド
+    public SpawnPointManager getSpawnPointManager() {
+        return this.spawnPointManager;
     }
 
     private void startPreCountdown() {
@@ -103,6 +106,7 @@ public class SnowballFightManager {
         announceWinningTeam();
         removePlayerEquipment();
         resetGame();
+        spawnPointManager.showArmorStands(); // ゲーム終了後にアーマースタンドを再表示
     }
 
     private void announceWinningTeam() {
@@ -111,6 +115,7 @@ public class SnowballFightManager {
 
     private void resetGame() {
         teamScoreManager.resetScores();
+        spawnPointManager.hideArmorStands(); // ゲームがリセットされる時にアーマースタンドを非表示にする
     }
 
     private void playSound(Sound sound, float volume, float pitch) {
@@ -221,6 +226,10 @@ public class SnowballFightManager {
         }
     }
 
+    public void addPlayerToTeam(Player player, GameTeam team) {
+        teamScoreManager.addPlayerToTeam(player, team);
+    }
+
     public void addPlayerToRedTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToRedTeam(player);
     }
@@ -270,18 +279,20 @@ public class SnowballFightManager {
         int blueTeamScore = teamScoreManager.getTeamScore(GameTeam.BLUE);
 
         // プレイヤーごとのスコアを設定
+        Score TimeScore = objective.getScore(ChatColor.AQUA + "残り時間:" + time);
+        TimeScore.setScore(7);
         Score redTeamPlayerScore = objective.getScore(ChatColor.RED + "あなたの所属: " + getPlayerTeamDisplay(player));
-        redTeamPlayerScore.setScore(1);  // 1 は表示される位置を示します
+        redTeamPlayerScore.setScore(6);  // 6 は表示される位置を示します
         Score serverPlayerCountScore = objective.getScore(ChatColor.GREEN + "サーバーのプレイヤー数: " + Bukkit.getOnlinePlayers().size());
-        serverPlayerCountScore.setScore(2);
+        serverPlayerCountScore.setScore(5);
         Score redTeamSizeScore = objective.getScore(ChatColor.GREEN + "赤チームの人数: " + teamScoreManager.getRedTeamSize());
-        redTeamSizeScore.setScore(3);
+        redTeamSizeScore.setScore(4);
         Score blueTeamSizeScore = objective.getScore(ChatColor.GREEN + "青チームの人数: " + teamScoreManager.getBlueTeamSize());
-        blueTeamSizeScore.setScore(4);
+        blueTeamSizeScore.setScore(3);
         Score redTeamKillScore = objective.getScore(ChatColor.RED + "赤チームのキル数: " + redTeamScore);
-        redTeamKillScore.setScore(5);
+        redTeamKillScore.setScore(2);
         Score blueTeamKillScore = objective.getScore(ChatColor.BLUE + "青チームのキル数: " + blueTeamScore);
-        blueTeamKillScore.setScore(6);
+        blueTeamKillScore.setScore(1);
 
         // プレイヤーにスコアボードを表示
         player.setScoreboard(scoreboard);

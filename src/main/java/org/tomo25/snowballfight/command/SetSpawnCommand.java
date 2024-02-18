@@ -2,7 +2,6 @@ package org.tomo25.snowballfight.command;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -56,8 +55,13 @@ public class SetSpawnCommand implements CommandExecutor {
 
     private void spawnArmorStand(Location location, String team) {
         ArmorStand armorStand = (ArmorStand) location.getWorld().spawnEntity(location.clone().add(0, 1, 0), org.bukkit.entity.EntityType.ARMOR_STAND);
+
         // アーマースタンドの名前をチームに応じて設定
         armorStand.setCustomName(team.toLowerCase() + "spawn");
         armorStand.setCustomNameVisible(true);
+
+        // アーマースタンドに染色された革装備を装備させる
+        GameTeam gameTeam = GameTeam.valueOf(team.toUpperCase());
+        snowballFightManager.getSpawnPointManager().equipColoredLeatherArmor(armorStand, gameTeam.getColor());
     }
 }

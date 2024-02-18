@@ -1,26 +1,26 @@
 name: SnowballFight
-version: '${project.version}'
+version: '1.0.0'
 main: org.tomo25.snowballfight.SnowballFight
 api-version: '1.20'
 
 commands:
   snowballfightsetspawn:
     description: 赤チームと青チームのスタート地点を決めるコマンド
-    usage: /<command> [Blue|Red]
+    usage: /<Blue|Red>
     aliases:
       - sballspawn
   snowballfighttime:
     description: ゲームの時間を変更するコマンド
-    usage: /<command> [time]
+    usage: /snowballfighttime <time>
     aliases:
       - sballtime
   snowballfightstart:
     description: ゲームを始めるコマンド
-    usage: /<command> [start]
+    usage: /snowballfightstart
     aliases:
       - sballstart
   snowballfightteam:
     description:  チームを分けるコマンド
-    usage: /<command> [teamset|addplayer] [Red|Blue]
+    usage: /snowballfightteam <teamset|addplayer> <Red|Blue>
     aliases:
       - sbllteam

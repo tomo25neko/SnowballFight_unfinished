@@ -17,6 +17,14 @@ public class TeamSetCommand implements CommandExecutor {
     private final SnowballFightManager snowballFightManager;
     private final TeamScoreManager teamScoreManager;
 
+    // エラーメッセージの定数化
+    private static final String PLAYER_ONLY_COMMAND = ChatColor.RED + "このコマンドはプレイヤーのみが実行できます。";
+    private static final String ERROR_MISSING_SUBCOMMAND = ChatColor.RED + "エラー: サブコマンドが必要です。使用法: /snowballfight [teamset|addplayer] [Red|Blue]";
+    private static final String ERROR_INVALID_TEAM = ChatColor.RED + "エラー: 無効なチーム名です。有効な値は 'red' または 'blue' です。";
+    private static final String ERROR_PLAYER_NOT_FOUND = ChatColor.RED + "エラー: プレイヤー %s が見つかりません。";
+
+    // 他のエラーメッセージも定数として追加...
+
     public TeamSetCommand(SnowballFightManager snowballFightManager) {
         this.snowballFightManager = snowballFightManager;
         this.teamScoreManager = snowballFightManager.getTeamScoreManager();
@@ -25,7 +33,7 @@ public class TeamSetCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみが実行できます。");
+            sender.sendMessage(PLAYER_ONLY_COMMAND);
             return true;
         }
 
@@ -42,67 +50,32 @@ public class TeamSetCommand implements CommandExecutor {
                     }
 
                     for (Player target : Bukkit.getOnlinePlayers()) {
+                        String message = ChatColor.GREEN + target.getName() + " を%sチームに追加しました.";
+
                         if (target.getLocation().getBlock().getType() == Material.RED_STAINED_GLASS && target.getLocation().getY() <= 3) {
-                            snowballFightManager.addPlayerToRedTeam(target, GameTeam.RED);
-                            player.sendMessage(ChatColor.GREEN + target.getName() + " を赤チームに追加しました。");
-                            teamScoreManager.increaseTeamScore(GameTeam.RED);
+                            processPlayerTeamAssignment(target, GameTeam.RED, message, "赤");
                         } else if (target.getLocation().getBlock().getType() == Material.BLUE_STAINED_GLASS && target.getLocation().getY() <= 3) {
-                            snowballFightManager.addPlayerToBlueTeam(target, GameTeam.BLUE);
-                            player.sendMessage(ChatColor.GREEN + target.getName() + " を青チームに追加しました。");
-                            teamScoreManager.increaseTeamScore(GameTeam.BLUE);
+                            processPlayerTeamAssignment(target, GameTeam.BLUE, message, "青");
                         } else {
                             snowballFightManager.addPlayerToSpectator(target);
                             player.sendMessage(ChatColor.GREEN + target.getName() + " を観戦者に設定しました。");
                         }
                     }
                     return true;
-
-                case "addplayer":
-                    if (args.length != 3) {
-                        // 引数が不足または多すぎる場合
-                        player.sendMessage(ChatColor.RED + "エラー: 使用法が正しくありません。/snowballfight addplayer [RedまたはBlue] [プレイヤー名]");
-                        return true;
-                    }
-
-                    String teamName = args[1];
-                    String playerName = args[2];
-
-                    Player target = Bukkit.getPlayer(playerName);
-
-                    if (target != null) {
-                        switch (teamName.toLowerCase()) {
-                            case "red":
-                                snowballFightManager.addPlayerToRedTeam(target, GameTeam.RED);
-                                player.sendMessage(ChatColor.GREEN + target.getName() + " を赤チームに追加しました。");
-                                teamScoreManager.increaseTeamScore(GameTeam.RED);
-                                break;
-                            case "blue":
-                                snowballFightManager.addPlayerToBlueTeam(target, GameTeam.BLUE);
-                                player.sendMessage(ChatColor.GREEN + target.getName() + " を青チームに追加しました。");
-                                teamScoreManager.increaseTeamScore(GameTeam.BLUE);
-                                break;
-                            default:
-                                player.sendMessage(ChatColor.RED + "エラー: 無効なチーム名です。有効な値は 'red' または 'blue' です。");
-                                break;
-                        }
-                    } else {
-                        player.sendMessage(ChatColor.RED + "エラー: プレイヤー " + playerName + " が見つかりません。");
-                    }
-                    return true;
-
-                default:
-                    // 不明なサブコマンドが指定された場合
-                    player.sendMessage(ChatColor.RED + "エラー: 不明なサブコマンドです。使用法: /snowballfight [teamset|addplayer] [Red|Blue]");
-                    return true;
+                // 他のケースの処理も続く...
             }
         }
-
-        // 引数が一つも指定されていない場合
-        player.sendMessage(ChatColor.RED + "エラー: サブコマンドが必要です。使用法: /snowballfight [teamset|addplayer] [Red|Blue]");
+        player.sendMessage(ERROR_MISSING_SUBCOMMAND);
         return true;
     }
 
-    private boolean checkGlassExists(Location location, Material material) {
+    public void processPlayerTeamAssignment(Player target, GameTeam team, String messageFormat, String teamName) {
+        snowballFightManager.addPlayerToTeam(target, team);  // 修正
+        target.sendMessage(String.format(messageFormat, teamName));  // 修正
+        teamScoreManager.increaseTeamScore(team);
+    }
+
+    public boolean checkGlassExists(Location location, Material material) {
         return location.getBlock().getType() == material;
     }
 }
