@@ -39,7 +39,7 @@ public final class SnowballFight extends JavaPlugin {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!snowballFightManager.isGameRunning()) {
+                if (!snowballFightManager.isGameStarted()) {
                     Bukkit.getOnlinePlayers().forEach(SnowballFight.this::updatePlayerTeamDisplay);
                 }
             }

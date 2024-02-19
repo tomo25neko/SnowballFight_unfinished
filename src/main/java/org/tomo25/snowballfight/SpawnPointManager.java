@@ -43,15 +43,27 @@ public class SpawnPointManager {
         }
     }
 
-    // 新しく追加: アーマースタンドを追加
-    public void addArmorStand(GameTeam team, ArmorStand armorStand) {
-        armorStandMap.put(team, armorStand);
+    // チームに対応するアーマースタンドを取得するメソッド
+    public ArmorStand getArmorStand(GameTeam team) {
+        Location location = getSpawnPoint(team);
+        if (location != null) {
+            // アーマースタンドはスポーン地点の上に設置されていると仮定しています
+            for (ArmorStand armorStand : location.getWorld().getEntitiesByClass(ArmorStand.class)) {
+                if (armorStand.getLocation().getBlockY() == location.getBlockY()) {
+                    return armorStand;
+                }
+            }
+        }
+        return null;
     }
 
-    // 新しく追加: アーマースタンドを取得
-    public ArmorStand getArmorStand(GameTeam team) {
-        return armorStandMap.get(team);
+    public void removeArmorStand(GameTeam team) {
+        ArmorStand armorStand = getArmorStand(team);
+        if (armorStand != null) {
+            armorStand.remove();
+        }
     }
+
 
     public void equipColoredLeatherArmor(ArmorStand armorStand, Color color) {
         ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);

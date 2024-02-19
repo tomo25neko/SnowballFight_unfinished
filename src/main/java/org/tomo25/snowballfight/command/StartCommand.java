@@ -20,7 +20,7 @@ public class StartCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみが実行できます。");
-            return true;
+            return false; // プレイヤー以外からの実行はキャンセル
         }
 
         Player player = (Player) sender;
@@ -29,13 +29,14 @@ public class StartCommand implements CommandExecutor {
             // チームもしくは観戦者に追加されていないプレイヤーがいる場合
             if (!validatePlayers()) {
                 player.sendMessage(ChatColor.RED + "エラー: チームもしくは観戦者に追加されていないプレイヤーがいます。/snowballfight teamset を使用してプレイヤーを追加してください。");
-                return true;
+                return false; // 条件を満たさない場合はキャンセル
             }
 
             if (snowballFightManager.getTime() <= 0) {
                 player.sendMessage(ChatColor.RED + "ゲームの時間が設定されていません！");
-            } else if (snowballFightManager.getTime() > 0) {
+            } else if (snowballFightManager.isGameStarted()) {
                 player.sendMessage(ChatColor.RED + "ゲームは既に開始されています！");
+                return false; // ゲームが既に開始されている場合はコマンドの実行をキャンセル
             } else {
                 snowballFightManager.startGame();
                 player.sendMessage(ChatColor.GREEN + "Snowball Fightゲームを開始しました！");
@@ -46,6 +47,9 @@ public class StartCommand implements CommandExecutor {
             return false;
         }
     }
+
+
+
 
     private boolean validatePlayers() {
         // チームもしくは観戦者に追加されていないプレイヤーがいるか確認

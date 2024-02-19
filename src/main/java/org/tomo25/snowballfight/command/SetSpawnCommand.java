@@ -40,6 +40,9 @@ public class SetSpawnCommand implements CommandExecutor {
             Player player = (Player) sender;
             Location location = new Location(player.getWorld(), player.getLocation().getX(), player.getLocation().getY() - 1, player.getLocation().getZ());
 
+            // 既存のスポーン地点がある場合はアーマースタンドを削除
+            snowballFightManager.getSpawnPointManager().removeArmorStand(GameTeam.valueOf(team.toUpperCase()));
+
             // スポーン地点設定
             snowballFightManager.setSpawnLocation(GameTeam.valueOf(team.toUpperCase()), location);
 

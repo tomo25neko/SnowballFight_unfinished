@@ -17,6 +17,7 @@ import org.bukkit.scoreboard.Scoreboard;
 
 public class SnowballFightManager {
 
+    private boolean gameStarted;  // 新しく追加
     private int time;
     private final TeamScoreManager teamScoreManager;
     private final SpawnPointManager spawnPointManager;
@@ -53,15 +54,9 @@ public class SnowballFightManager {
             Bukkit.broadcastMessage(ChatColor.RED + "エラー: 赤チームと青チームのスタート地点が設定されていません！");
             return;
         }
-
         startPreCountdown();
         snowballDistributionManager.startSnowballDistribution(this); // スタート時に雪玉を配布
-
-    }
-
-    // SpawnPointManager のインスタンスを提供するメソッド
-    public SpawnPointManager getSpawnPointManager() {
-        return this.spawnPointManager;
+        gameStarted = true;  // ゲームが開始されたことを示す
     }
 
     private void startPreCountdown() {
@@ -107,6 +102,11 @@ public class SnowballFightManager {
         removePlayerEquipment();
         resetGame();
         spawnPointManager.showArmorStands(); // ゲーム終了後にアーマースタンドを再表示
+        gameStarted = false;  // ゲームが終了したことを示す
+    }
+
+    public boolean isGameStarted() {
+        return gameStarted;
     }
 
     private void announceWinningTeam() {
@@ -144,12 +144,9 @@ public class SnowballFightManager {
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
-        if (event.getEntity() instanceof Player && isGameRunning()) {
+        if (event.getEntity() instanceof Player && isGameStarted()) {
             event.setCancelled(true);
         }
-    }
-    public boolean isGameRunning() {
-        return time > 0;
     }
 
     private void spawnPlayersToStartLocations() {
@@ -226,18 +223,20 @@ public class SnowballFightManager {
         }
     }
 
+    // SpawnPointManager のインスタンスを提供するメソッド
+    public SpawnPointManager getSpawnPointManager() {
+        return this.spawnPointManager;
+    }
+
     public void addPlayerToTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToTeam(player, team);
     }
-
     public void addPlayerToRedTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToRedTeam(player);
     }
-
     public void addPlayerToBlueTeam(Player player,GameTeam team) {
         teamScoreManager.addPlayerToBlueTeam(player);
     }
-
     public void addPlayerToSpectator(Player player) {
         // Implement adding a player to the spectator team
     }
