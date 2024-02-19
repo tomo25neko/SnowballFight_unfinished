@@ -21,4 +21,13 @@ public enum GameTeam {
     public Color getColor() {
         return color;
     }
+
+    public static GameTeam getTeamByName(String name) {
+        for (GameTeam team : values()) {
+            if (team.getTeamName().equalsIgnoreCase(name)) {
+                return team;
+            }
+        }
+        return null;
+    }
 }

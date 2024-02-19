@@ -22,8 +22,7 @@ public class TeamSetCommand implements CommandExecutor {
     private static final String ERROR_MISSING_SUBCOMMAND = ChatColor.RED + "エラー: サブコマンドが必要です。使用法: /snowballfight [teamset|addplayer] [Red|Blue]";
     private static final String ERROR_INVALID_TEAM = ChatColor.RED + "エラー: 無効なチーム名です。有効な値は 'red' または 'blue' です。";
     private static final String ERROR_PLAYER_NOT_FOUND = ChatColor.RED + "エラー: プレイヤー %s が見つかりません。";
-
-    // 他のエラーメッセージも定数として追加...
+    private static final String ERROR_PLAYER_ALREADY_IN_TEAM = ChatColor.RED + "エラー: プレイヤー %s は既にチームに所属しています。";
 
     public TeamSetCommand(SnowballFightManager snowballFightManager) {
         this.snowballFightManager = snowballFightManager;
@@ -43,35 +42,43 @@ public class TeamSetCommand implements CommandExecutor {
             String subCommand = args[0].toLowerCase();
 
             switch (subCommand) {
-                case "teamset":
-                    if (!checkGlassExists(player.getLocation(), Material.RED_STAINED_GLASS) || !checkGlassExists(player.getLocation(), Material.BLUE_STAINED_GLASS)) {
-                        player.sendMessage(ChatColor.RED + "エラー: 赤と青の色付きガラスが両方存在していません。");
+                case "addplayer":
+                    if (args.length >= 3) {
+                        String teamName = args[1].toUpperCase();
+                        String playerName = args[2];
+
+                        GameTeam team = GameTeam.getTeamByName(teamName);
+                        if (team == null) {
+                            player.sendMessage(ERROR_INVALID_TEAM);
+                            return true;
+                        }
+
+                        Player targetPlayer = Bukkit.getPlayer(playerName);
+                        if (targetPlayer == null) {
+                            player.sendMessage(String.format(ERROR_PLAYER_NOT_FOUND, playerName));
+                            return true;
+                        }
+
+                        if (snowballFightManager.isPlayerInTeam(targetPlayer, team)) {
+                            player.sendMessage(String.format(ERROR_PLAYER_ALREADY_IN_TEAM, playerName));
+                            return true;
+                        }
+
+                        processPlayerTeamAssignment(targetPlayer, team, ChatColor.GREEN + playerName + " を%sチームに追加しました.");
+                        return true;
+                    } else {
+                        player.sendMessage(ERROR_MISSING_SUBCOMMAND);
                         return true;
                     }
-
-                    for (Player target : Bukkit.getOnlinePlayers()) {
-                        String message = ChatColor.GREEN + target.getName() + " を%sチームに追加しました.";
-
-                        if (target.getLocation().getBlock().getType() == Material.RED_STAINED_GLASS && target.getLocation().getY() <= 3) {
-                            processPlayerTeamAssignment(target, GameTeam.RED, message, "赤");
-                        } else if (target.getLocation().getBlock().getType() == Material.BLUE_STAINED_GLASS && target.getLocation().getY() <= 3) {
-                            processPlayerTeamAssignment(target, GameTeam.BLUE, message, "青");
-                        } else {
-                            snowballFightManager.addPlayerToSpectator(target);
-                            player.sendMessage(ChatColor.GREEN + target.getName() + " を観戦者に設定しました。");
-                        }
-                    }
-                    return true;
-                // 他のケースの処理も続く...
             }
         }
         player.sendMessage(ERROR_MISSING_SUBCOMMAND);
         return true;
     }
 
-    public void processPlayerTeamAssignment(Player target, GameTeam team, String messageFormat, String teamName) {
-        snowballFightManager.addPlayerToTeam(target, team);  // 修正
-        target.sendMessage(String.format(messageFormat, teamName));  // 修正
+    public void processPlayerTeamAssignment(Player target, GameTeam team, String messageFormat) {
+        snowballFightManager.addPlayerToTeam(target, team);
+        target.sendMessage(String.format(messageFormat, team.getTeamName()));
         teamScoreManager.increaseTeamScore(team);
     }
 

@@ -215,17 +215,25 @@ public class SnowballFightManager {
                 chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
                 meta = (LeatherArmorMeta) chestplate.getItemMeta();
                 meta.setColor(Color.RED);
+                chestplate.setItemMeta(meta);
             } else {
                 chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
                 meta = (LeatherArmorMeta) chestplate.getItemMeta();
                 meta.setColor(Color.BLUE);
+                chestplate.setItemMeta(meta);
             }
+
+            equipment.setChestplate(chestplate);
         }
     }
 
     // SpawnPointManager のインスタンスを提供するメソッド
     public SpawnPointManager getSpawnPointManager() {
         return this.spawnPointManager;
+    }
+
+    public boolean isPlayerInTeam(Player player, GameTeam team) {
+        return teamScoreManager.getPlayerTeam(player) == team;
     }
 
     public void addPlayerToTeam(Player player, GameTeam team) {
