@@ -30,10 +30,10 @@ public final class SnowballFight extends JavaPlugin {
 
         Bukkit.getOnlinePlayers().forEach(this::sendPluginStatusMessage);
 
-        getCommand("snowballfighttime").setExecutor(new TimeCommand(snowballFightManager));
-        getCommand("snowballfightstart").setExecutor(new StartCommand(snowballFightManager));
-        getCommand("snowballfightteam").setExecutor(new TeamSetCommand(snowballFightManager));
-        getCommand("snowballfightsetspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
+        getCommand("time").setExecutor(new TimeCommand(snowballFightManager));
+        getCommand("start").setExecutor(new StartCommand(snowballFightManager));
+        getCommand("setteam").setExecutor(new TeamSetCommand(snowballFightManager));
+        getCommand("setspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
 
         // ゲームがスタートしていない場合も1秒ごとにスコアボードを更新
         new BukkitRunnable() {
