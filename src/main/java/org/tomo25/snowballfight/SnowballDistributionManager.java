@@ -11,12 +11,16 @@ public class SnowballDistributionManager {
     private final SnowballFight plugin;
     private final int snowballGiveInterval = 15; // 雪玉を配布する間隔（秒）
     private final int maxSnowballs = 16; // プレイヤーが持てる雪玉の最大数
+    private final SnowballFightManager snowballFightManager; // SnowballFightManagerのインスタンスを保持するフィールド
 
-    public SnowballDistributionManager(SnowballFight plugin) {
+
+    public SnowballDistributionManager(SnowballFight plugin, SnowballFightManager snowballFightManager) {
         this.plugin = plugin;
+        this.snowballFightManager = snowballFightManager; // SnowballFightManagerのインスタンスを設定
     }
 
-    public void startSnowballDistribution(SnowballFightManager snowballFightManager) {
+    public void startSnowballDistribution() {
+        // メソッドの中身を変更せず、引数なしで呼び出すように修正
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -32,6 +36,7 @@ public class SnowballDistributionManager {
             }
         }.runTaskTimer(plugin, 0L, 20L * snowballGiveInterval);
     }
+
 
     private void giveSnowballs(Player player, int amount) {
         ItemStack snowballStack = new ItemStack(Material.SNOWBALL, amount);

@@ -29,7 +29,7 @@ public class SnowballFightManager {
         this.time = 0;
         this.teamScoreManager = new TeamScoreManager();
         this.spawnPointManager = new SpawnPointManager(snowballFight);
-        this.snowballDistributionManager = new SnowballDistributionManager(snowballFight);
+        this.snowballDistributionManager = new SnowballDistributionManager(snowballFight, this);
     }
 
     public void setSpawnLocation(GameTeam team, Location location) {
@@ -49,13 +49,14 @@ public class SnowballFightManager {
     }
 
     public void startGame() {
-        // スタート地点が設定されているか確認
-        if (spawnPointManager.getSpawnPoint(GameTeam.RED) == null || spawnPointManager.getSpawnPoint(GameTeam.BLUE) == null) {
-            Bukkit.broadcastMessage(ChatColor.RED + "エラー: 赤チームと青チームのスタート地点が設定されていません！");
-            return;
+        // ゲームが開始される前にプレイヤーを観戦者に追加
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (teamScoreManager.getPlayerTeam(player) == null) {
+                addPlayerToSpectator(player);
+            }
         }
+
         startPreCountdown();
-        snowballDistributionManager.startSnowballDistribution(this); // スタート時に雪玉を配布
         gameStarted = true;  // ゲームが開始されたことを示す
     }
 
@@ -74,6 +75,9 @@ public class SnowballFightManager {
                     this.cancel();
                     startGameTimer();
                     spawnPlayersToStartLocations(); // ゲームのスタート時にプレイヤーをスタート地点にテレポート
+                    setPlayerGameModeToSpectator(); //ゲームスタート時に観戦者のゲームモードをスペクテイターに変更
+                    teleportSpectatorsToRandomSpawn();// 観戦者をランダムなスポーン地点に配置
+                    snowballDistributionManager.startSnowballDistribution(); // スタート時に雪玉を配布
                 }
             }
         }.runTaskTimer((Plugin) this, 0L, 20L);
@@ -100,6 +104,7 @@ public class SnowballFightManager {
     private void endGame() {
         announceWinningTeam();
         removePlayerEquipment();
+        resetPlayerGameMode(); // 観戦者のプレイヤーのゲームモードをリセット
         resetGame();
         spawnPointManager.showArmorStands(); // ゲーム終了後にアーマースタンドを再表示
         gameStarted = false;  // ゲームが終了したことを示す
@@ -187,10 +192,6 @@ public class SnowballFightManager {
             }.runTaskLater(plugin, 200L); // 10秒後にリスポーン
         }
     }
-    public boolean isPlayerSpectator(Player player) {
-        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
-        return playerTeam == null; // プレイヤーのチームが null の場合は観戦者と判断
-    }
 
     private void respawnPlayer(Player player, GameTeam team) {
         // Implement player respawn logic based on the team's spawn location
@@ -230,6 +231,43 @@ public class SnowballFightManager {
     // SpawnPointManager のインスタンスを提供するメソッド
     public SpawnPointManager getSpawnPointManager() {
         return this.spawnPointManager;
+    }
+
+    /**
+    この後観戦者の処理が入る
+     1 観戦者の判別処理
+     2ゲームスタート時に観戦者のゲームモードをスペクテイターにする処理
+     3ゲームスタート時に観戦者をREDもしくはBLUEのスポーン地点にランダム移動
+     **/
+    public boolean isPlayerSpectator(Player player) {
+        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
+        return playerTeam == null; // プレイヤーのチームが null の場合は観戦者と判断
+    }
+
+    public void setPlayerGameModeToSpectator() {
+        Bukkit.getOnlinePlayers().stream()
+                .filter(this::isPlayerSpectator)
+                .forEach(player -> player.setGameMode(GameMode.SPECTATOR));
+    }
+
+    public void resetPlayerGameMode() {
+        Bukkit.getOnlinePlayers().forEach(player -> player.setGameMode(GameMode.SURVIVAL));
+    }
+
+    public void teleportSpectatorsToRandomSpawn() {
+        // 赤チームと青チームのスポーン地点を取得
+        Location redSpawn = spawnPointManager.getSpawnPoint(GameTeam.RED);
+        Location blueSpawn = spawnPointManager.getSpawnPoint(GameTeam.BLUE);
+
+        // ランダムにスポーン地点を選択
+        Location randomSpawn = (Math.random() < 0.5) ? redSpawn : blueSpawn;
+
+        // 観戦者をランダムなスポーン地点に移動
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (isPlayerSpectator(player)) {
+                player.teleport(randomSpawn);
+            }
+        }
     }
 
     public boolean isPlayerInTeam(Player player, GameTeam team) {

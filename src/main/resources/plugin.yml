@@ -14,13 +14,13 @@ commands:
     usage: /settime <time>
     aliases:
       - sballtime
-  start:
+  gamestart:
     description: ゲームを始めるコマンド
-    usage: /start
+    usage: /gamestart
     aliases:
       - sballstart
-  team:
+  setteam:
     description:  チームを分けるコマンド
-    usage: /team <teamset|addplayer> <Red|Blue>
+    usage: /setteam <teamset|addplayer> <Red|Blue>
     aliases:
       - sbllteam

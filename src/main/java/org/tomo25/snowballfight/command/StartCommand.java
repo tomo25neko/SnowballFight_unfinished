@@ -6,6 +6,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.tomo25.snowballfight.GameTeam;
 import org.tomo25.snowballfight.SnowballFightManager;
 
 public class StartCommand implements CommandExecutor {
@@ -26,38 +27,39 @@ public class StartCommand implements CommandExecutor {
         Player player = (Player) sender;
 
         if (args.length > 0 && args[0].equalsIgnoreCase("start")) {
-            // チームもしくは観戦者に追加されていないプレイヤーがいる場合
-            if (!validatePlayers()) {
-                player.sendMessage(ChatColor.RED + "エラー: チームもしくは観戦者に追加されていないプレイヤーがいます。/snowballfight teamset を使用してプレイヤーを追加してください。");
-                return false; // 条件を満たさない場合はキャンセル
-            }
-
-            if (snowballFightManager.getTime() <= 0) {
+            // ゲームの時間が設定されていない場合はエラーメッセージを送信して終了
+            if (snowballFightManager.getTime() == 0) {
                 player.sendMessage(ChatColor.RED + "ゲームの時間が設定されていません！");
-            } else if (snowballFightManager.isGameStarted()) {
-                player.sendMessage(ChatColor.RED + "ゲームは既に開始されています！");
-                return false; // ゲームが既に開始されている場合はコマンドの実行をキャンセル
-            } else {
-                snowballFightManager.startGame();
-                player.sendMessage(ChatColor.GREEN + "Snowball Fightゲームを開始しました！");
-            }
-            return true;
-        } else {
-            player.sendMessage(ChatColor.RED + "正しい使い方: /snowballfightstart start");
-            return false;
-        }
-    }
-
-
-
-
-    private boolean validatePlayers() {
-        // チームもしくは観戦者に追加されていないプレイヤーがいるか確認
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (snowballFightManager.getTeamScoreManager().getPlayerTeam(onlinePlayer) == null) {
                 return false;
             }
+
+            // スタート地点が設定されているか確認
+            if (snowballFightManager.getSpawnPointManager().getSpawnPoint(GameTeam.RED) == null || snowballFightManager.getSpawnPointManager().getSpawnPoint(GameTeam.BLUE) == null) {
+                Bukkit.broadcastMessage(ChatColor.RED + "エラー: 赤チームと青チームのスタート地点が設定されていません！");
+                return false;
+            }
+
+            // ゲームが既に開始されている場合はエラーメッセージを送信して終了
+            if (snowballFightManager.isGameStarted()) {
+                player.sendMessage(ChatColor.RED + "ゲームは既に開始されています！");
+                return false; // ゲームが既に開始されている場合はコマンドの実行をキャンセル
+            }
+
+            // チームに所属していないプレイヤーを観戦者に追加し、全プレイヤーにメッセージを送信
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                if (snowballFightManager.getTeamScoreManager().getPlayerTeam(onlinePlayer) == null) {
+                    snowballFightManager.addPlayerToSpectator(onlinePlayer);
+                    onlinePlayer.sendMessage(ChatColor.YELLOW + "チームに所属していないプレイヤーは、観戦者として参加します。");
+                }
+            }
+
+            // ゲームを開始して、全プレイヤーにメッセージを送信
+            snowballFightManager.startGame();
+            Bukkit.broadcastMessage(ChatColor.GREEN + "まもなくゲームが開始されます！");
+            return true;
+        } else {
+            player.sendMessage(ChatColor.RED + "正しい使い方: /gamestart start");
+            return false;
         }
-        return true;
     }
 }
