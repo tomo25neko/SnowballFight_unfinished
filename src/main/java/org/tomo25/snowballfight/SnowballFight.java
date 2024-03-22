@@ -32,7 +32,7 @@ public final class SnowballFight extends JavaPlugin {
 
         getCommand("settime").setExecutor(new TimeCommand(snowballFightManager));
         getCommand("start").setExecutor(new StartCommand(snowballFightManager));
-        getCommand("setteam").setExecutor(new TeamSetCommand(snowballFightManager));
+        getCommand("team").setExecutor(new TeamSetCommand(snowballFightManager));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
 
         // ゲームがスタートしていない場合も1秒ごとにスコアボードを更新

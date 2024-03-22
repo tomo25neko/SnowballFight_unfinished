@@ -26,7 +26,7 @@ public class TimeCommand implements CommandExecutor {
 
         // 引数の数が正しくない場合や数字でない場合はエラーメッセージを表示して終了
         if (args.length != 1 || !isNumeric(args[0])) {
-            player.sendMessage(ChatColor.RED + "正しい使い方: /snowballfight time <数字>");
+            player.sendMessage(ChatColor.RED + "正しい使い方: /settime <数字>");
             return true;
         }
 
