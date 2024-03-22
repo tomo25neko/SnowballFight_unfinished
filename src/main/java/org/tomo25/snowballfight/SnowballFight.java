@@ -30,7 +30,7 @@ public final class SnowballFight extends JavaPlugin {
 
         Bukkit.getOnlinePlayers().forEach(this::sendPluginStatusMessage);
 
-        getCommand("time").setExecutor(new TimeCommand(snowballFightManager));
+        getCommand("settime").setExecutor(new TimeCommand(snowballFightManager));
         getCommand("start").setExecutor(new StartCommand(snowballFightManager));
         getCommand("setteam").setExecutor(new TeamSetCommand(snowballFightManager));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
