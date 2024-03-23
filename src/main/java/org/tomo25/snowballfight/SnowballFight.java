@@ -63,7 +63,7 @@ public final class SnowballFight extends JavaPlugin {
         objective.getScore(" ").setScore(0); // Add blank space for better visibility
 
         String teamDisplay = snowballFightManager.getPlayerTeamDisplay(player);
-        objective.getScore(ChatColor.GREEN + "あなたの所属: " + teamDisplay).setScore(1);
+        objective.getScore(ChatColor.GREEN + "所属: " + teamDisplay).setScore(1);
         objective.getScore(ChatColor.GOLD + "プレイヤー数: " + Bukkit.getOnlinePlayers().size()).setScore(2);
 
         if (snowballFightManager.isPlayerSpectator(player)) {
