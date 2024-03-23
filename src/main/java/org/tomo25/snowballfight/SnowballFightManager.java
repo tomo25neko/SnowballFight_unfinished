@@ -2,9 +2,11 @@ package org.tomo25.snowballfight;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
@@ -13,6 +15,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.entity.Snowball;
 
 public class SnowballFightManager {
 
@@ -183,13 +186,37 @@ public class SnowballFightManager {
         }
     }
 
-    //プレイヤーがダメージを受けた際に無効化する
+    // プレイヤーがダメージを受けた際の処理
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player && isGameStarted()) {
+            Player player = (Player) event.getEntity();
+            // ダメージが雪玉によるものであればスコアを加算し、ダメージを無効化せずに処理を続行
+            if (event.getCause() == EntityDamageEvent.DamageCause.PROJECTILE) {
+                // イベントのダメージを与えたエンティティを取得
+                Projectile projectile = (Projectile) event.getEntity();
+                // ダメージを与えたエンティティがプレイヤーであり、かつ発射者がプレイヤーである場合のみ処理を続行
+                if (projectile.getShooter() instanceof Player && event.getEntity() instanceof Snowball) {
+                    Player shooter = (Player) projectile.getShooter();
+                    GameTeam shooterTeam = teamScoreManager.getPlayerTeam(shooter);
+                    // ダメージを受けたプレイヤーのチームを取得
+                    GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
+                    if (shooterTeam != null && playerTeam != null && shooterTeam != playerTeam) {
+                        // 雪玉によるダメージの場合は対応するチームのスコアを加算
+                        if (playerTeam == GameTeam.RED) {
+                            teamScoreManager.increaseTeamScore(GameTeam.BLUE);
+                        } else {
+                            teamScoreManager.increaseTeamScore(GameTeam.RED);
+                        }
+                    }
+                }
+                return;
+            }
+            // 雪玉以外のダメージの場合はキャンセル
             event.setCancelled(true);
         }
     }
+
 
     private void spawnPlayersToStartLocations() {
         Location redTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.RED);
@@ -311,6 +338,15 @@ public class SnowballFightManager {
         }
     }
 
+    //ゲーム中の新規参加者を観戦者にする
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        // ゲームが開始されている場合にプレイヤーが参加したら観戦者にする
+        if (isGameStarted()) {
+            addPlayerToSpectator(player);
+        }
+    }
     public boolean isPlayerInTeam(Player player, GameTeam team) {
         return teamScoreManager.getPlayerTeam(player) == team;
     }
@@ -328,7 +364,8 @@ public class SnowballFightManager {
     }
 
     public void addPlayerToSpectator(Player player) {
-        // Implement adding a player to the spectator team
+        // プレイヤーを観戦者に設定する
+        player.setGameMode(GameMode.SPECTATOR);
     }
 
     public TeamScoreManager getTeamScoreManager() {
