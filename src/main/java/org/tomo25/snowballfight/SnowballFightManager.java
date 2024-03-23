@@ -8,7 +8,6 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -85,9 +84,23 @@ public class SnowballFightManager {
         }.runTaskTimer(plugin, 0L, 20L); // SnowballFightインスタンスを使用する
     }
 
+    private Score timeScore; // フィールド変数としてtimeScoreを宣言
 
     private void startGameTimer() {
         playSound(Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        Objective objective = scoreboard.getObjective("snowballFight");
+
+        if (objective == null) {
+            // Objective が存在しない場合は新しい Objective を登録
+            objective = scoreboard.registerNewObjective("snowballFight", "dummy", ChatColor.BOLD + "Snowball Fight");
+            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        }
+
+        // 残り時間のスコアを設定
+        timeScore = objective.getScore(ChatColor.AQUA + "残り時間: " + time);
+        timeScore.setScore(7); // 残り時間のスコアの優先度を高く設定
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -117,7 +130,8 @@ public class SnowballFightManager {
         return gameStarted;
     }
 
-    /**ここからはゲーム終了時の処理
+    /**
+     * ここからはゲーム終了時の処理
      * 1両チームのスコアを比べて勝敗を決める処理
      * 2ゲームのリセット処理
      * 3雪玉を削除する処理
@@ -261,10 +275,10 @@ public class SnowballFightManager {
     }
 
     /**
-    この後観戦者の処理が入る
-     1 観戦者の判別処理
-     2ゲームスタート時に観戦者のゲームモードをスペクテイターにする処理
-     3ゲームスタート時に観戦者をREDもしくはBLUEのスポーン地点にランダム移動
+     * この後観戦者の処理が入る
+     * 1 観戦者の判別処理
+     * 2ゲームスタート時に観戦者のゲームモードをスペクテイターにする処理
+     * 3ゲームスタート時に観戦者をREDもしくはBLUEのスポーン地点にランダム移動
      **/
     public boolean isPlayerSpectator(Player player) {
         GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
@@ -304,12 +318,15 @@ public class SnowballFightManager {
     public void addPlayerToTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToTeam(player, team);
     }
+
     public void addPlayerToRedTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToRedTeam(player);
     }
-    public void addPlayerToBlueTeam(Player player,GameTeam team) {
+
+    public void addPlayerToBlueTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToBlueTeam(player);
     }
+
     public void addPlayerToSpectator(Player player) {
         // Implement adding a player to the spectator team
     }
@@ -350,9 +367,15 @@ public class SnowballFightManager {
         int redTeamScore = teamScoreManager.getTeamScore(GameTeam.RED);
         int blueTeamScore = teamScoreManager.getTeamScore(GameTeam.BLUE);
 
-        // プレイヤーごとのスコアを設定
-        Score TimeScore = objective.getScore(ChatColor.AQUA + "残り時間:" + time);
-        TimeScore.setScore(7);
+        // 残り時間のスコアを設定
+        if (timeScore != null) {
+            timeScore.setScore(time); // 残り時間を設定
+        } else {
+            // timeScore が null の場合、新しいスコアを作成して設定
+            timeScore = objective.getScore(ChatColor.AQUA + "残り時間: " + time);
+            timeScore.setScore(7); // 優先順位を最大にするために高い値を設定
+        }
+
         Score redTeamPlayerScore = objective.getScore(ChatColor.RED + "所属: " + getPlayerTeamDisplay(player));
         redTeamPlayerScore.setScore(6);  // 6 は表示される位置を示します
         Score serverPlayerCountScore = objective.getScore(ChatColor.GREEN + "総プレイヤー数: " + Bukkit.getOnlinePlayers().size());
