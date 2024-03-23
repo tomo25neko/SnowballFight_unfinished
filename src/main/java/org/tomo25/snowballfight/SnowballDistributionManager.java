@@ -28,7 +28,7 @@ public class SnowballDistributionManager {
                         .filter(player -> !isPlayerSpectator(player, snowballFightManager))
                         .forEach(player -> {
                             int currentSnowballs = getPlayerSnowballCount(player);
-                            if (currentSnowballs < maxSnowballs) {
+                            if (currentSnowballs < maxSnowballs && snowballFightManager.isGameStarted()) {
                                 int snowballsToAdd = Math.min(maxSnowballs - currentSnowballs, 3);
                                 giveSnowballs(player, snowballsToAdd);
                             }

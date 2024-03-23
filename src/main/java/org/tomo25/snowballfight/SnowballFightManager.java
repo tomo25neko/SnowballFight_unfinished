@@ -25,6 +25,10 @@ public class SnowballFightManager {
     private final SpawnPointManager spawnPointManager;
     private final SnowballDistributionManager snowballDistributionManager;
     private final SnowballFight plugin;
+    // タイトルを送信するメソッド
+    private void sendTitle(Player player, String title, String subTitle, int fadeIn, int stay, int fadeOut) {
+        player.sendTitle(title, subTitle, fadeIn, stay, fadeOut);
+    }
 
     public SnowballFightManager(SnowballFight snowballFight) {
         this.plugin = snowballFight;
@@ -71,11 +75,19 @@ public class SnowballFightManager {
             @Override
             public void run() {
                 if (preCountdown > 0) {
+                    // ゲームスタートまでの残り時間を各プレイヤーに送信
+                    String message = ChatColor.GREEN + "ゲームスタートまであと " + preCountdown + " 秒";
+                    Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(message));
                     if (preCountdown <= 3) {
+                        //三秒前からはタイトルにカウントを表示し、音を鳴らす
+                        Bukkit.getOnlinePlayers().forEach(player -> sendTitle(player, ChatColor.RED + "_" + preCountdown + "_",  "", 0, 20, 10));
                         playSound(Sound.BLOCK_ANVIL_PLACE, 1.0f, 1.0f);
                     }
                     preCountdown--;
                 } else {
+                    // ゲームが開始されたときに "スタート" というタイトルを表示
+                    Bukkit.getOnlinePlayers().forEach(player -> sendTitle(player, ChatColor.GREEN + "ゲームスタート", "", 0, 30, 20));
+                    //以下　メインの処理
                     this.cancel();
                     startGameTimer();//メインのゲームタイマーをスタート
                     spawnPlayersToStartLocations();//チームに入っているプレイヤーをそれぞれのスタート地点に移動
@@ -129,6 +141,7 @@ public class SnowballFightManager {
         gameStarted = false;  // ゲームが終了したことを示す
     }
 
+    //このメゾットはゲーム中trueを保持し呼び出されると返す処理。
     public boolean isGameStarted() {
         return gameStarted;
     }
