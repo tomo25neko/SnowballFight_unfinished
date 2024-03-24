@@ -29,6 +29,7 @@ public class SnowballDistributionManager {
             public void run() {
                 // ゲームが開始されていない場合は処理を中止する
                 if (!snowballFightManager.isGameStarted()) {
+                    this.cancel();
                     return;
                 }
 
