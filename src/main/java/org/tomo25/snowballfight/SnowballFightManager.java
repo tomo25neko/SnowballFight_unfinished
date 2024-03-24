@@ -20,14 +20,23 @@ import org.bukkit.entity.Snowball;
 public class SnowballFightManager {
 
     private boolean gameStarted; // ゲームが開始されているかどうかを示すフラグ
-    private int time;
+    private int time; // ゲームの残り時間
     private final TeamScoreManager teamScoreManager;
     private final SpawnPointManager spawnPointManager;
     private final SnowballDistributionManager snowballDistributionManager;
     private final SnowballFight plugin;
-    // タイトルを送信するメソッド
+    private Score timeScore; // 残り時間のスコアを保持するフィールド変数
+
+    // プレイヤーにタイトルを送信するメソッド
     private void sendTitle(Player player, String title, String subTitle, int fadeIn, int stay, int fadeOut) {
         player.sendTitle(title, subTitle, fadeIn, stay, fadeOut);
+    }
+
+    // プレイヤーにサウンドを再生するメソッド
+    public void playSound(Sound sound, float volume, float pitch) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        }
     }
 
     public SnowballFightManager(SnowballFight snowballFight) {
@@ -67,7 +76,7 @@ public class SnowballFightManager {
         gameStarted = true;  // ゲームが開始されたことを示す
     }
 
-    //スタートコマンド入力時のカウントダウン
+    // スタートコマンド入力時のカウントダウン
     private void startPreCountdown() {
         new BukkitRunnable() {
             int preCountdown = 10;
@@ -79,7 +88,7 @@ public class SnowballFightManager {
                     String message = ChatColor.GREEN + "ゲームスタートまであと " + preCountdown + " 秒";
                     Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(message));
                     if (preCountdown <= 3) {
-                        //三秒前からはタイトルにカウントを表示し、音を鳴らす
+                        // 3秒前からはタイトルにカウントを表示し、音を鳴らす
                         Bukkit.getOnlinePlayers().forEach(player -> sendTitle(player, ChatColor.RED + "_" + preCountdown + "_",  "", 0, 20, 10));
                         playSound(Sound.BLOCK_ANVIL_PLACE, 1.0f, 1.0f);
                     }
@@ -87,19 +96,17 @@ public class SnowballFightManager {
                 } else {
                     // ゲームが開始されたときに "スタート" というタイトルを表示
                     Bukkit.getOnlinePlayers().forEach(player -> sendTitle(player, ChatColor.GREEN + "ゲームスタート", "", 0, 30, 20));
-                    //以下　メインの処理
+                    // メインの処理
                     this.cancel();
-                    startGameTimer();//メインのゲームタイマーをスタート
-                    spawnPlayersToStartLocations();//チームに入っているプレイヤーをそれぞれのスタート地点に移動
-                    setPlayerGameModeToSpectator();//チームに入っていないプレイヤーをスペクテイターにする
-                    teleportSpectatorsToRandomSpawn();//観戦者のランダムテレポート
-                    snowballDistributionManager.startSnowballDistribution();//雪玉配布メゾット
+                    startGameTimer(); // メインのゲームタイマーをスタート
+                    spawnPlayersToStartLocations(); // チームに入っているプレイヤーをそれぞれのスタート地点に移動
+                    setPlayerGameModeToSpectator(); // チームに入っていないプレイヤーをスペクテイターにする
+                    teleportSpectatorsToRandomSpawn(); // 観戦者のランダムテレポート
+                    snowballDistributionManager.startSnowballDistribution(); // 雪玉配布メゾット
                 }
             }
         }.runTaskTimer(plugin, 0L, 20L); // SnowballFightインスタンスを使用する
     }
-
-    private Score timeScore; // フィールド変数としてtimeScoreを宣言
 
     private void startGameTimer() {
         playSound(Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
@@ -124,37 +131,37 @@ public class SnowballFightManager {
                     // 時間が経過するごとにプレイヤーの情報を更新
                     Bukkit.getOnlinePlayers().forEach(SnowballFightManager.this::updatePlayerTeamDisplay);
                 } else {
-                    endGame();//ゲーム終了の処理
+                    endGame(); // ゲーム終了の処理
                     this.cancel();
                 }
             }
         }.runTaskTimer(plugin, 0L, 20L); // 1秒ごとに実行
     }
 
-
+    // ゲームの終了処理を行うメソッド
     private void endGame() {
-        announceWinningTeam();//勝ったチームを宣言
-        removePlayerEquipment();//プレイヤーの装備を削除
+        announceWinningTeam(); // 勝ったチームを宣言
+        removePlayerEquipment(); // プレイヤーの装備を削除
         resetPlayerGameMode(); // 観戦者のプレイヤーのゲームモードをリセット
         resetGame();
         spawnPointManager.showArmorStands(); // ゲーム終了後にアーマースタンドを再表示
-        gameStarted = false;  // ゲームが終了したことを示す
+        gameStarted = false; // ゲームが終了したことを示す
     }
 
-    //このメゾットはゲーム中trueを保持し呼び出されると返す処理。
+    // ゲームが開始されているかどうかを返すメソッド
     public boolean isGameStarted() {
         return gameStarted;
     }
 
     /**
      * ここからはゲーム終了時の処理
-     * 1両チームのスコアを比べて勝敗を決める処理
-     * 2ゲームのリセット処理
-     * 3雪玉を削除する処理
-     * 4プレイヤーの装備を削除する処理
+     * 1. 両チームのスコアを比べて勝敗を決める処理
+     * 2. ゲームのリセット処理
+     * 3. 雪玉を削除する処理
+     * 4. プレイヤーの装備を削除する処理
      */
 
-    //両チームのスコアを比べて勝敗を決める
+    // 両チームのスコアを比べて勝敗を決めるメソッド
     private void announceWinningTeam() {
         // 赤チームと青チームのスコアを取得
         int redTeamScore = teamScoreManager.getTeamScore(GameTeam.RED);
@@ -169,11 +176,13 @@ public class SnowballFightManager {
         }
     }
 
+    // ゲームをリセットするメソッド
     private void resetGame() {
         teamScoreManager.resetScores();
         spawnPointManager.hideArmorStands(); // ゲームがリセットされる時にアーマースタンドを非表示にする
     }
 
+    // プレイヤーの装備を削除するメソッド
     private void removePlayerEquipment() {
         Bukkit.getOnlinePlayers().forEach(player -> {
             // プレイヤーの雪玉をクリア
@@ -192,14 +201,7 @@ public class SnowballFightManager {
         }
     }
 
-
-    private void playSound(Sound sound, float volume, float pitch) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.playSound(player.getLocation(), sound, volume, pitch);
-        }
-    }
-
-    // プレイヤーがダメージを受けた際の処理
+    // ゲーム中にプレイヤーがダメージを受けた際の処理
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player && isGameStarted()) {
@@ -230,8 +232,9 @@ public class SnowballFightManager {
         }
     }
 
-
+    //ゲーム中のプレイヤーをそれぞれのチームのスポーン地点にテレポートさせるメソッド
     private void spawnPlayersToStartLocations() {
+        // 赤チームと青チームのスポーン地点を取得
         Location redTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.RED);
         Location blueTeamLocation = spawnPointManager.getSpawnPoint(GameTeam.BLUE);
 
@@ -239,12 +242,15 @@ public class SnowballFightManager {
             Bukkit.getOnlinePlayers().forEach(player -> {
                 GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
                 Location targetLocation = (playerTeam == GameTeam.RED) ? redTeamLocation : blueTeamLocation;
-                // 赤チームのプレイヤーには赤い革チェストプレートを、青チームのプレイヤーには青い革チェストプレートを装備
+
+                // プレイヤーにチームごとの革チェストプレートを装備
                 equipTeamArmor(player, playerTeam);
+
+                // 赤チームまたは青チームのスポーン地点にプレイヤーをテレポート
                 player.teleport(targetLocation);
 
                 if (playerTeam != null) {
-                    // プレイヤーが観戦者でない場合にテレポート
+                    // プレイヤーが観戦者でない場合に装備とテレポートを行う
                     if (!isPlayerSpectator(player)) {
                         player.teleport(targetLocation);
                         equipTeamArmor(player, playerTeam);
@@ -254,33 +260,32 @@ public class SnowballFightManager {
         }
     }
 
-    //プレイヤーを復活させる処理
+    // プレイヤーが死亡した際の処理
     @EventHandler
     public void playerDied(PlayerDeathEvent event) {
         Player player = event.getEntity();
         GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
         if (playerTeam != null) {
-            addPlayerToSpectator(player); // プレイヤーを観戦者に移動
-
+            // プレイヤーを観戦者に移動し、一定時間後にリスポーンさせる
+            addPlayerToSpectator(player);
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    respawnPlayer(player, playerTeam); // プレイヤーをリスポーンさせる
+                    respawnPlayer(player, playerTeam);
                 }
             }.runTaskLater(plugin, 200L); // 10秒後にリスポーン
         }
     }
 
+    // プレイヤーをリスポーンさせるメソッド
     private void respawnPlayer(Player player, GameTeam team) {
         // チームのスポーン地点を取得
         Location respawnLocation = spawnPointManager.getSpawnPoint(team);
 
         if (respawnLocation != null) {
-            // プレイヤーが観戦者の場合はスポーン地点にテレポートしない
+            // プレイヤーが観戦者でない場合にスポーン地点にテレポートし、チームのアーマーを装備
             if (!isPlayerSpectator(player)) {
-                // スポーン地点にプレイヤーをテレポート
                 player.teleport(respawnLocation);
-                // チームのアーマーを装備させる
                 equipTeamArmor(player, team);
             }
         }
@@ -316,9 +321,9 @@ public class SnowballFightManager {
 
     /**
      * この後観戦者の処理が入る
-     * 1 観戦者の判別処理
-     * 2ゲームスタート時に観戦者のゲームモードをスペクテイターにする処理
-     * 3ゲームスタート時に観戦者をREDもしくはBLUEのスポーン地点にランダム移動
+     * 1. 観戦者の判別処理
+     * 2. ゲームスタート時に観戦者のゲームモードをスペクテイターにする処理
+     * 3. ゲームスタート時に観戦者を RED もしくは BLUE のスポーン地点にランダム移動
      **/
     public boolean isPlayerSpectator(Player player) {
         GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
@@ -351,7 +356,7 @@ public class SnowballFightManager {
         }
     }
 
-    //ゲーム中の新規参加者を観戦者にする
+    // ゲーム中の新規参加者を観戦者にする
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -360,20 +365,13 @@ public class SnowballFightManager {
             addPlayerToSpectator(player);
         }
     }
+
     public boolean isPlayerInTeam(Player player, GameTeam team) {
         return teamScoreManager.getPlayerTeam(player) == team;
     }
 
     public void addPlayerToTeam(Player player, GameTeam team) {
         teamScoreManager.addPlayerToTeam(player, team);
-    }
-
-    public void addPlayerToRedTeam(Player player, GameTeam team) {
-        teamScoreManager.addPlayerToRedTeam(player);
-    }
-
-    public void addPlayerToBlueTeam(Player player, GameTeam team) {
-        teamScoreManager.addPlayerToBlueTeam(player);
     }
 
     public void addPlayerToSpectator(Player player) {
@@ -402,8 +400,8 @@ public class SnowballFightManager {
         }
     }
 
-    //プレイヤーにスコアを表示するメゾット
-    private void updatePlayerTeamDisplay(Player player) {
+    // プレイヤーにスコアを表示するメゾット
+    public void updatePlayerTeamDisplay(Player player) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         Objective objective = scoreboard.getObjective("snowballFight");
 

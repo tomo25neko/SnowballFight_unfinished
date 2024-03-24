@@ -24,18 +24,21 @@ public final class SnowballFight extends JavaPlugin {
     public void onEnable() {
         getLogger().info("プラグインが有効になりました");
 
+        // SnowballFightManagerのインスタンスを作成し、リスナーを登録
         snowballFightManager = new SnowballFightManager(this);
         new SnowballListener(snowballFightManager, this);
         new SnowballFightListener(snowballFightManager);
 
+        // オンラインのプレイヤーにプラグインのステータスメッセージを送信
         Bukkit.getOnlinePlayers().forEach(this::sendPluginStatusMessage);
 
+        // コマンドの処理クラスを登録
         getCommand("settime").setExecutor(new TimeCommand(snowballFightManager));
         getCommand("gamestart").setExecutor(new StartCommand(snowballFightManager));
         getCommand("setteam").setExecutor(new TeamSetCommand(snowballFightManager));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
 
-        // ゲームがスタートしていない場合も1秒ごとにスコアボードを更新
+        // ゲームが開始していない場合に1秒ごとにプレイヤーのスコアボードを更新
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -46,21 +49,24 @@ public final class SnowballFight extends JavaPlugin {
         }.runTaskTimer(this, 0L, 20L); // 1秒ごとに実行
     }
 
+    // プレイヤーがサーバーに参加したときの処理
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         updatePlayerTeamDisplay(event.getPlayer());
     }
 
+    // プレイヤーがサーバーから退出したときの処理
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         updatePlayerTeamDisplay(event.getPlayer());
     }
 
+    // プレイヤーのスコアボードを更新するメソッド
     private void updatePlayerTeamDisplay(Player player) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective objective = scoreboard.registerNewObjective("snowballFight", "dummy", "Snowball Fight");
 
-        objective.getScore(" ").setScore(0); // Add blank space for better visibility
+        objective.getScore(" ").setScore(0); // スコアボードを見やすくするための空行
 
         String teamDisplay = snowballFightManager.getPlayerTeamDisplay(player);
         objective.getScore(ChatColor.GREEN + "所属: " + teamDisplay).setScore(1);
@@ -82,7 +88,7 @@ public final class SnowballFight extends JavaPlugin {
     public void onDisable() {
         getLogger().info("プラグインが無効になりました");
 
-        // プラグインが無効になったときに全プレイヤーのスコアボードとスコアを削除
+        // プラグインが無効になったときに全プレイヤーのスコアボードをリセット
         for (Player player : Bukkit.getOnlinePlayers()) {
             Scoreboard playerScoreboard = player.getScoreboard();
             playerScoreboard.getEntries().forEach(playerScoreboard::resetScores);
@@ -90,6 +96,7 @@ public final class SnowballFight extends JavaPlugin {
         }
     }
 
+    // プラグインのステータスメッセージをプレイヤーに送信するメソッド
     private void sendPluginStatusMessage(Player player) {
         player.sendMessage("SnowballFightプラグインが" + (isEnabled() ? "有効" : "無効") + "になりました！");
     }
