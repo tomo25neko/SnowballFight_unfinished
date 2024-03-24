@@ -1,9 +1,11 @@
 package org.tomo25.snowballfight;
 
 import org.bukkit.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -89,7 +91,7 @@ public class SnowballFightManager {
                     Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(message));
                     if (preCountdown <= 3) {
                         // 3秒前からはタイトルにカウントを表示し、音を鳴らす
-                        Bukkit.getOnlinePlayers().forEach(player -> sendTitle(player, ChatColor.RED + "_" + preCountdown + "_",  "", 0, 20, 10));
+                        Bukkit.getOnlinePlayers().forEach(player -> sendTitle(player, ChatColor.RED + "_" + preCountdown + "_", "", 0, 20, 10));
                         playSound(Sound.BLOCK_ANVIL_PLACE, 1.0f, 1.0f);
                     }
                     preCountdown--;
@@ -201,36 +203,50 @@ public class SnowballFightManager {
         }
     }
 
-    // ゲーム中にプレイヤーがダメージを受けた際の処理
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player && isGameStarted()) {
             Player player = (Player) event.getEntity();
+
             // ダメージが雪玉によるものであればスコアを加算し、ダメージを無効化せずに処理を続行
             if (event.getCause() == EntityDamageEvent.DamageCause.PROJECTILE) {
-                // イベントのダメージを与えたエンティティを取得
-                Projectile projectile = (Projectile) event.getEntity();
-                // ダメージを与えたエンティティがプレイヤーであり、かつ発射者がプレイヤーである場合のみ処理を続行
-                if (projectile.getShooter() instanceof Player && event.getEntity() instanceof Snowball) {
+                Projectile projectile = null;
+                // イベントが EntityDamageByEntityEvent であるかを確認
+                if (event instanceof EntityDamageByEntityEvent) {
+                    EntityDamageByEntityEvent entityEvent = (EntityDamageByEntityEvent) event;
+                    // ダメージを与えたエンティティを取得
+                    Entity damager = entityEvent.getDamager();
+                    // ダメージを与えたエンティティが Projectile であるかを確認
+                    if (damager instanceof Projectile) {
+                        projectile = (Projectile) damager;
+                    }
+                }
+
+                // ダメージを与えたエンティティが存在し、かつ発射者がプレイヤーである場合のみ処理を続行
+                if (projectile != null && projectile.getShooter() instanceof Player && projectile instanceof Snowball) {
                     Player shooter = (Player) projectile.getShooter();
                     GameTeam shooterTeam = teamScoreManager.getPlayerTeam(shooter);
-                    // ダメージを受けたプレイヤーのチームを取得
                     GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
                     if (shooterTeam != null && playerTeam != null && shooterTeam != playerTeam) {
-                        // 雪玉によるダメージの場合は対応するチームのスコアを加算
                         if (playerTeam == GameTeam.RED) {
                             teamScoreManager.increaseTeamScore(GameTeam.BLUE);
                         } else {
                             teamScoreManager.increaseTeamScore(GameTeam.RED);
                         }
+                        // プレイヤーをキルする
+                        player.setHealth(0);
                     }
                 }
                 return;
             }
+
             // 雪玉以外のダメージの場合はキャンセル
             event.setCancelled(true);
         }
     }
+
+
+
 
     //ゲーム中のプレイヤーをそれぞれのチームのスポーン地点にテレポートさせるメソッド
     private void spawnPlayersToStartLocations() {
@@ -424,20 +440,18 @@ public class SnowballFightManager {
             timeScore.setScore(7); // 優先順位を最大にするために高い値を設定
         }
 
-        Score redTeamPlayerScore = objective.getScore(ChatColor.RED + "所属: " + getPlayerTeamDisplay(player));
+        Score redTeamPlayerScore = objective.getScore(ChatColor.RED + "赤チームスコア: " + redTeamScore);
         redTeamPlayerScore.setScore(6);  // 6 は表示される位置を示します
+        Score blueTeamPlayerScore = objective.getScore(ChatColor.BLUE + "青チームスコア: " + blueTeamScore);
+        blueTeamPlayerScore.setScore(5);
         Score serverPlayerCountScore = objective.getScore(ChatColor.GREEN + "総プレイヤー数: " + Bukkit.getOnlinePlayers().size());
-        serverPlayerCountScore.setScore(5);
+        serverPlayerCountScore.setScore(4);
         Score redTeamSizeScore = objective.getScore(ChatColor.GREEN + "赤チーム人数: " + teamScoreManager.getRedTeamSize());
-        redTeamSizeScore.setScore(4);
+        redTeamSizeScore.setScore(3);
         Score blueTeamSizeScore = objective.getScore(ChatColor.GREEN + "青チーム人数: " + teamScoreManager.getBlueTeamSize());
-        blueTeamSizeScore.setScore(3);
-        Score redTeamKillScore = objective.getScore(ChatColor.RED + "赤キル数: " + redTeamScore);
-        redTeamKillScore.setScore(2);
-        Score blueTeamKillScore = objective.getScore(ChatColor.BLUE + "青キル数: " + blueTeamScore);
-        blueTeamKillScore.setScore(1);
+        blueTeamSizeScore.setScore(2);
 
-        // プレイヤーにスコアボードを表示
+        // 各プレイヤーにスコアボードを表示
         player.setScoreboard(scoreboard);
     }
 }
