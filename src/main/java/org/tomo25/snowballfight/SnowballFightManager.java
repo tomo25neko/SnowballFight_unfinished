@@ -1,11 +1,9 @@
 package org.tomo25.snowballfight;
 
 import org.bukkit.*;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -17,15 +15,16 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.entity.Snowball;
 
-public class SnowballFightManager {
+
+public class SnowballFightManager implements Listener {
 
     private boolean gameStarted; // ゲームが開始されているかどうかを示すフラグ
     private int time; // ゲームの残り時間
     private final TeamScoreManager teamScoreManager;
     private final SpawnPointManager spawnPointManager;
     private final SnowballDistributionManager snowballDistributionManager;
+    private final SnowballDamageHandler snowballDamageHandler;
     private final SnowballFight plugin;
 
     // プレイヤーにタイトルを送信するメソッド
@@ -46,6 +45,7 @@ public class SnowballFightManager {
         this.teamScoreManager = new TeamScoreManager();
         this.spawnPointManager = new SpawnPointManager(snowballFight);
         this.snowballDistributionManager = new SnowballDistributionManager(snowballFight, this);
+        this.snowballDamageHandler = new SnowballDamageHandler(this);
     }
 
     // スポーン地点の設定
@@ -192,59 +192,8 @@ public class SnowballFightManager {
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player) || !isGameStarted()) {
-            return;
-        }
-
-        Player player = (Player) event.getEntity();
-
-        // ダメージが雪玉によるものであるかを確認
-        if (event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
-            event.setCancelled(true); // 雪玉以外のダメージはキャンセル
-            return;
-        }
-
-        Projectile projectile = null;
-
-        // イベントが EntityDamageByEntityEvent であるかを確認
-        if (event instanceof EntityDamageByEntityEvent) {
-            EntityDamageByEntityEvent entityEvent = (EntityDamageByEntityEvent) event;
-            // ダメージを与えたエンティティを取得
-            Entity damager = entityEvent.getDamager();
-            // ダメージを与えたエンティティが Projectile であるかを確認
-            if (damager instanceof Projectile) {
-                projectile = (Projectile) damager;
-            }
-        }
-
-        // 雪玉でない場合は処理を終了
-        if (!(projectile instanceof Snowball)) {
-            return;
-        }
-
-        // ダメージを与えたエンティティがプレイヤーかどうかを確認
-        if (!(projectile.getShooter() instanceof Player)) {
-            return;
-        }
-
-        Player shooter = (Player) projectile.getShooter();
-        GameTeam shooterTeam = teamScoreManager.getPlayerTeam(shooter);
-        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
-
-        // ダメージを与えたプレイヤーが相手チームのメンバーであるかどうかを確認
-        if (shooterTeam != null && playerTeam != null && shooterTeam != playerTeam) {
-            // 相手チームのメンバーにポイントを加算
-            if (playerTeam == GameTeam.RED) {
-                teamScoreManager.increaseTeamScore(GameTeam.BLUE);
-            } else {
-                teamScoreManager.increaseTeamScore(GameTeam.RED);
-            }
-            // プレイヤーをキルする
-            player.setHealth(0);
-        }
+        snowballDamageHandler.onEntityDamage(event);
     }
-
-
 
     //ゲーム中のプレイヤーをそれぞれのチームのスポーン地点にテレポートさせるメソッド
     private void spawnPlayersToStartLocations() {
@@ -420,7 +369,8 @@ public class SnowballFightManager {
 
         if (objective == null) {
             // Objective が存在しない場合は新しい Objective を登録
-            objective = scoreboard.registerNewObjective("snowballFight", "dummy", ChatColor.BOLD + "Snowball Fight");
+            objective = scoreboard.registerNewObjective("snowballFight", "dummy");
+            objective.setDisplayName(ChatColor.BOLD + "Snowball Fight");
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         }
 
@@ -446,7 +396,7 @@ public class SnowballFightManager {
         Score blueTeamSizeScore = objective.getScore(ChatColor.GREEN + "青チーム人数: " + blueTeamSize);
         blueTeamSizeScore.setScore(2);
 
-        // 各プレイヤーにスコアボードを表示
+        // すでに存在するスコアを更新する
         player.setScoreboard(scoreboard);
     }
 }
