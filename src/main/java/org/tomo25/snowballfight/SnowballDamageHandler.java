@@ -1,69 +1,61 @@
 package org.tomo25.snowballfight;
 
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.projectiles.ProjectileSource;
 
 public class SnowballDamageHandler implements Listener {
-    private final SnowballFightManager snowballFightManager;
     private final TeamScoreManager teamScoreManager;
 
+    // コンストラクタ
     public SnowballDamageHandler(SnowballFightManager snowballFightManager) {
-        this.snowballFightManager = snowballFightManager;
         this.teamScoreManager = snowballFightManager.getTeamScoreManager();
     }
 
+
+    // 雪玉がプレイヤーに当たった時のイベント処理
     @EventHandler
-    public void onEntityDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player) || !snowballFightManager.isGameStarted()) {
+    public void onSnowballHit(EntityDamageByEntityEvent event) {
+        // ダメージを与えたエンティティが雪玉でない場合は処理を終了
+        if (!(event.getDamager() instanceof Snowball)) {
             return;
         }
 
-        // イベントが EntityDamageByEntityEvent でない場合、処理を終了
-        if (!(event instanceof EntityDamageByEntityEvent)) {
+        // 雪玉の発射者がプレイヤーでない場合は処理を終了
+        Snowball snowball = (Snowball) event.getDamager();
+        ProjectileSource shooter = snowball.getShooter();
+        if (!(shooter instanceof Player)) {
             return;
         }
 
-        EntityDamageByEntityEvent entityEvent = (EntityDamageByEntityEvent) event;
-        Entity damager = entityEvent.getDamager();
-
-        // ダメージを与えたエンティティが Projectile でない場合、処理を終了
-        if (!(damager instanceof Projectile)) {
+        // 攻撃者と被攻撃者を取得
+        Player attacker = (Player) shooter;
+        if (!(event.getEntity() instanceof Player)) {
             return;
         }
+        Player victim = (Player) event.getEntity();
 
-        Projectile projectile = (Projectile) damager;
+        // 攻撃者と被攻撃者のチームを取得
+        GameTeam attackerTeam = teamScoreManager.getPlayerTeam(attacker);
+        GameTeam victimTeam = teamScoreManager.getPlayerTeam(victim);
 
-        // ダメージを与えた Projectile が雪玉でない場合、処理を終了
-        if (!(projectile instanceof Snowball)) {
-            return;
-        }
-
-        // ダメージを与えたエンティティがプレイヤーかどうかを確認
-        if (!(projectile.getShooter() instanceof Player)) {
-            return;
-        }
-
-        Player shooter = (Player) projectile.getShooter();
-        Player player = (Player) event.getEntity();
-        GameTeam shooterTeam = teamScoreManager.getPlayerTeam(shooter);
-        GameTeam playerTeam = teamScoreManager.getPlayerTeam(player);
-
-        // ダメージを与えたプレイヤーが相手チームのメンバーであるかどうかを確認
-        if (shooterTeam != null && playerTeam != null && shooterTeam != playerTeam) {
-            // 相手チームのメンバーにポイントを加算
-            if (playerTeam == GameTeam.RED) {
+        // 攻撃者と被攻撃者の両方がチームに所属しており、異なるチームである場合のみ処理を実行
+        if (attackerTeam != null && victimTeam != null && !attackerTeam.equals(victimTeam)) {
+            // 攻撃者が青チームの場合
+            if (attackerTeam == GameTeam.BLUE) {
+                // 青チームのスコアを1加算し、被攻撃者の体力を0に設定してキルを表現
                 teamScoreManager.increaseTeamScore(GameTeam.BLUE);
-            } else {
-                teamScoreManager.increaseTeamScore(GameTeam.RED);
+                victim.setHealth(0);
             }
-            // プレイヤーをキルする
-            player.setHealth(0);
+            // 攻撃者が赤チームの場合
+            else if (attackerTeam == GameTeam.RED) {
+                // 赤チームのスコアを1加算し、被攻撃者の体力を0に設定してキルを表現
+                teamScoreManager.increaseTeamScore(GameTeam.RED);
+                victim.setHealth(0);
+            }
         }
     }
 }

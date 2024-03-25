@@ -4,27 +4,23 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
-import org.bukkit.scoreboard.Scoreboard;
-
 
 public class SnowballFightManager implements Listener {
 
-    private boolean gameStarted; // ゲームが開始されているかどうかを示すフラグ
-    private int time; // ゲームの残り時間
+    private boolean gameStarted;
+    private int time;
     private final TeamScoreManager teamScoreManager;
     private final SpawnPointManager spawnPointManager;
     private final SnowballDistributionManager snowballDistributionManager;
     private final SnowballDamageHandler snowballDamageHandler;
+    private final GameScoreboardManager scoreboardManager;
     private final SnowballFight plugin;
 
     // プレイヤーにタイトルを送信するメソッド
@@ -46,6 +42,7 @@ public class SnowballFightManager implements Listener {
         this.spawnPointManager = new SpawnPointManager(snowballFight);
         this.snowballDistributionManager = new SnowballDistributionManager(snowballFight, this);
         this.snowballDamageHandler = new SnowballDamageHandler(this);
+        this.scoreboardManager = new GameScoreboardManager(snowballFight, this.teamScoreManager);
     }
 
     // スポーン地点の設定
@@ -118,7 +115,7 @@ public class SnowballFightManager implements Listener {
                 if (time > 0) {
                     decreaseTime();
                     // 時間が経過するごとにプレイヤーの情報を更新
-                    Bukkit.getOnlinePlayers().forEach(SnowballFightManager.this::updatePlayerTeamDisplay);
+                    Bukkit.getOnlinePlayers().forEach(player -> scoreboardManager.updatePlayerTeamDisplay(player, time));
                 } else {
                     endGame(); // ゲーム終了の処理
                     this.cancel();
@@ -126,7 +123,6 @@ public class SnowballFightManager implements Listener {
             }
         }.runTaskTimer(plugin, 0L, 20L); // 1秒ごとに実行
     }
-
     // ゲームの終了処理を行うメソッド
     private void endGame() {
         announceWinningTeam(); // 勝ったチームを宣言
@@ -191,8 +187,8 @@ public class SnowballFightManager implements Listener {
     }
 
     @EventHandler
-    public void onEntityDamage(EntityDamageEvent event) {
-        snowballDamageHandler.onEntityDamage(event);
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        snowballDamageHandler.onSnowballHit(event);
     }
 
     //ゲーム中のプレイヤーをそれぞれのチームのスポーン地点にテレポートさせるメソッド
@@ -264,18 +260,23 @@ public class SnowballFightManager implements Listener {
             if (team == GameTeam.RED) {
                 chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
                 meta = (LeatherArmorMeta) chestplate.getItemMeta();
-                meta.setColor(Color.RED);
-                chestplate.setItemMeta(meta);
+                if (meta != null) {
+                    meta.setColor(Color.RED);
+                    chestplate.setItemMeta(meta);
+                }
             } else {
                 chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
                 meta = (LeatherArmorMeta) chestplate.getItemMeta();
-                meta.setColor(Color.BLUE);
-                chestplate.setItemMeta(meta);
+                if (meta != null) {
+                    meta.setColor(Color.BLUE);
+                    chestplate.setItemMeta(meta);
+                }
             }
 
             equipment.setChestplate(chestplate);
         }
     }
+
 
     // SpawnPointManager のインスタンスを提供するメソッド
     public SpawnPointManager getSpawnPointManager() {
@@ -361,42 +362,5 @@ public class SnowballFightManager implements Listener {
             default:
                 return ChatColor.GRAY + "観戦者";
         }
-    }
-
-    public void updatePlayerTeamDisplay(Player player) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        Objective objective = scoreboard.getObjective("snowballFight");
-
-        if (objective == null) {
-            // Objective が存在しない場合は新しい Objective を登録
-            objective = scoreboard.registerNewObjective("snowballFight", "dummy");
-            objective.setDisplayName(ChatColor.BOLD + "Snowball Fight");
-            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        }
-
-        // スコアを設定
-        int time = getTime();
-        int redTeamScore = teamScoreManager.getTeamScore(GameTeam.RED);
-        int blueTeamScore = teamScoreManager.getTeamScore(GameTeam.BLUE);
-        int playerCount = Bukkit.getOnlinePlayers().size();
-        int redTeamSize = teamScoreManager.getRedTeamSize();
-        int blueTeamSize = teamScoreManager.getBlueTeamSize();
-
-        // すでに存在するスコアを取得して更新する
-        Score timeScore = objective.getScore(ChatColor.AQUA + "残り時間: " + ChatColor.YELLOW + time);
-        timeScore.setScore(7);
-        Score redTeamPlayerScore = objective.getScore(ChatColor.RED + "赤チームスコア: " + redTeamScore);
-        redTeamPlayerScore.setScore(6);
-        Score blueTeamPlayerScore = objective.getScore(ChatColor.BLUE + "青チームスコア: " + blueTeamScore);
-        blueTeamPlayerScore.setScore(5);
-        Score serverPlayerCountScore = objective.getScore(ChatColor.GREEN + "総プレイヤー数: " + playerCount);
-        serverPlayerCountScore.setScore(4);
-        Score redTeamSizeScore = objective.getScore(ChatColor.GREEN + "赤チーム人数: " + redTeamSize);
-        redTeamSizeScore.setScore(3);
-        Score blueTeamSizeScore = objective.getScore(ChatColor.GREEN + "青チーム人数: " + blueTeamSize);
-        blueTeamSizeScore.setScore(2);
-
-        // すでに存在するスコアを更新する
-        player.setScoreboard(scoreboard);
     }
 }
