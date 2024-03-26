@@ -16,14 +16,20 @@ public class GameScoreboardManager {
     }
 
     public void updatePlayerTeamDisplay(Player player, int time) {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+        if (scoreboardManager == null) {
+            plugin.getLogger().warning("スコアボードマネージャーを取得できませんでした。");
+            return;
+        }
+
+        Scoreboard scoreboard = scoreboardManager.getNewScoreboard();
         Objective objective = scoreboard.getObjective("snowballFight");
 
         if (objective == null) {
-            objective = scoreboard.registerNewObjective("snowballFight", "dummy");
-            objective.setDisplayName(ChatColor.BOLD + "Snowball Fight");
+            objective = scoreboard.registerNewObjective("snowballFight", "dummy", ChatColor.BOLD + "Snowball Fight");
             objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         }
+
 
         int redTeamScore = teamScoreManager.getTeamScore(GameTeam.RED);
         int blueTeamScore = teamScoreManager.getTeamScore(GameTeam.BLUE);

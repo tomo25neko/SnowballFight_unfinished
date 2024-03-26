@@ -34,10 +34,29 @@ public final class SnowballFight extends JavaPlugin implements Listener {
         Bukkit.getOnlinePlayers().forEach(this::sendPluginStatusMessage);
 
         // コマンドの処理クラスを登録
-        getCommand("settime").setExecutor(new TimeCommand(snowballFightManager));
-        getCommand("gamestart").setExecutor(new StartCommand(snowballFightManager));
-        getCommand("setteam").setExecutor(new TeamSetCommand(snowballFightManager));
-        getCommand("setspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
+        if (getCommand("settime") != null) {
+            getCommand("settime").setExecutor(new TimeCommand(snowballFightManager));
+        } else {
+            getLogger().warning("コマンド settime が見つかりませんでした。");
+        }
+
+        if (getCommand("gamestart") != null) {
+            getCommand("gamestart").setExecutor(new StartCommand(snowballFightManager));
+        } else {
+            getLogger().warning("コマンド gamestart が見つかりませんでした。");
+        }
+
+        if (getCommand("setteam") != null) {
+            getCommand("setteam").setExecutor(new TeamSetCommand(snowballFightManager));
+        } else {
+            getLogger().warning("コマンド setteam が見つかりませんでした。");
+        }
+
+        if (getCommand("setspawn") != null) {
+            getCommand("setspawn").setExecutor(new SetSpawnCommand(snowballFightManager));
+        } else {
+            getLogger().warning("コマンド setspawn が見つかりませんでした。");
+        }
 
         // ゲームが開始していない場合に1秒ごとにプレイヤーのスコアボードを更新
         new BukkitRunnable() {

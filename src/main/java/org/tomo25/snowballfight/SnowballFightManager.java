@@ -45,6 +45,7 @@ public class SnowballFightManager implements Listener {
         this.scoreboardManager = new GameScoreboardManager(snowballFight, this.teamScoreManager);
     }
 
+
     // スポーン地点の設定
     public void setSpawnLocation(GameTeam team, Location location) {
         spawnPointManager.setSpawnPoint(team, location);

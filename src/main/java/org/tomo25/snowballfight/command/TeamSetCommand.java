@@ -70,11 +70,15 @@ public class TeamSetCommand implements CommandExecutor {
                         player.sendMessage(ERROR_MISSING_SUBCOMMAND);
                         return true;
                     }
+                case "teamset":
+                    assignPlayerToTeamByGlass(player);
+                    return true;
             }
         }
         player.sendMessage(ERROR_MISSING_SUBCOMMAND);
         return true;
     }
+
 
     public void processPlayerTeamAssignment(Player target, GameTeam team, String messageFormat) {
         snowballFightManager.addPlayerToTeam(target, team);
@@ -84,5 +88,18 @@ public class TeamSetCommand implements CommandExecutor {
 
     public boolean checkGlassExists(Location location, Material material) {
         return location.getBlock().getType() == material;
+    }
+
+    public void assignPlayerToTeamByGlass(Player player) {
+        Location location = player.getLocation();
+
+        if (checkGlassExists(location.clone().add(0, -1, 0), Material.BLUE_STAINED_GLASS)) {
+            processPlayerTeamAssignment(player, GameTeam.BLUE, ChatColor.GREEN + player.getName() + " を青チームに追加しました.");
+        } else if (checkGlassExists(location.clone().add(0, -1, 0), Material.RED_STAINED_GLASS)) {
+            processPlayerTeamAssignment(player, GameTeam.RED, ChatColor.GREEN + player.getName() + " を赤チームに追加しました.");
+        } else {
+            // どちらの上にもいない場合は観戦者として追加
+
+        }
     }
 }

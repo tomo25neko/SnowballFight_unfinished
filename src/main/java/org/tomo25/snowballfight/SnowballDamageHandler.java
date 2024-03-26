@@ -42,7 +42,7 @@ public class SnowballDamageHandler implements Listener {
         Player victim = (Player) event.getEntity();
 
         // いずれかの条件が満たされていない場合はイベントをキャンセル
-        if (attacker == null || victim == null || attacker.equals(victim) || !snowballFightManager.isGameStarted()) {
+        if (victim == null || attacker.equals(victim) || !snowballFightManager.isGameStarted()) {
             event.setCancelled(true); // イベントをキャンセル
             return;
         }
